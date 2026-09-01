@@ -1,7 +1,7 @@
 # GymFlow 🏋️‍♂️
 
 > **Trabajo Final Integrador (TFI)**  
-> *Tecnicatura Universitaria en Programación a Distancia (TUPaD)*
+> Tecnicatura Universitaria en Programación a Distancia (TUPaD)
 
 ---
 

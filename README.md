@@ -9,8 +9,8 @@
 - **Giselle Chaumont Mohr**
 - **Emilia Gómez Juárez**
 
-**Tutor asignado:** Santiago Fonzo
-**Fecha de entrega propuesta:** 30/08/2026
+- **Tutor asignado:** Santiago Fonzo
+- **Fecha de entrega propuesta:** 30/08/2026
 
 ---
 

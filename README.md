@@ -298,6 +298,10 @@ La mayor experiencia técnica de Giselle se aprovechará en la configuración de
 
 Al finalizar cada semana, ambas integrantes revisarán las horas utilizadas, las tareas completadas y los bloqueos. Si una tarea se atrasa, se actualizará su estimación antes de iniciar una funcionalidad que dependa de ella.
 
+## Link a Trello
+
+<https://trello.com/invite/b/6a9b1e2cb8b6fb77d8bf0aa1/ATTId5260eccc0b730825c9f66583a051fa9B8418573/gymflow-tfi>
+
 ## Riesgos y mitigaciones
 
 Se identifican los principales eventos que podrían afectar el alcance, los plazos o la calidad de GymFlow. Para cada riesgo se establece una medida preventiva y una respuesta en caso de que ocurra.

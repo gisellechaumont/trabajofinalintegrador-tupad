@@ -38,10 +38,9 @@ En establecimientos deportivos pequeños, la falta de un sistema centralizado ge
 
 | Actor afectado | Impacto del problema |
 | --- | --- |
-| Responsable o propietario | Dificultad para obtener una visión general y actualizada sobre clases, cupos, paquetes y asistencias, limitando la toma de decisiones informada. |
-| Personal administrativo | Sobrecarga de tareas manuales repetitivas, necesidad de consultar múltiples fuentes y riesgo de registrar datos inconsistentes. |
-| Profesor | Posibilidad de recibir listados de inscriptos desactualizados y falta de un registro ágil de asistencia. |
-| Socio | Demoras para consultar horarios, dependencia de canales de atención y riesgo de inconsistencia sobre sus créditos o reservas. |
+| **Administración del gimnasio** *(Dueño y personal de recepción)* | Dificultad para obtener una visión consolidada del negocio, sobrecarga en la atención manual de consultas y riesgo recurrente de registrar datos inconsistentes o cupos duplicados por falta de un sistema centralizado. |
+| **Profesor** | Posibilidad de recibir listados de inscriptos desactualizados, falta de visibilidad en tiempo real sobre los cupos de su clase y ausencia de un mecanismo ágil para registrar asistencias. |
+| **Socio** | Demoras para consultar horarios, dependencia constante de la respuesta por mensajería para confirmar turnos e incertidumbre sobre la vigencia de sus paquetes o el estado de sus reservas. |
 
 ## Evaluación competitiva preliminar
 

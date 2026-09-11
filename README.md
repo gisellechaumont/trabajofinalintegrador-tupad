@@ -330,8 +330,15 @@ Ante esta situación se aplicará el siguiente plan:
 Se mantendrán las funciones necesarias para el circuito principal: autenticación y roles, gestión de usuarios, clases y paquetes, control de cupos, inscripciones, cancelaciones y asistencias. Tampoco se recortarán las validaciones backend, la integridad de los datos ni las pruebas de los procesos críticos.
 
 
-## 11. Viabilidad y conclusión
+## 11. Viabilidad
 
-La elección de una arquitectura desacoplada con React en el Frontend y Node.js en el Backend ofrece un estándar profesional de la industria, garantizando una excelente experiencia interactiva para socios y profesores, con validaciones firmes en el servidor.
+Se profundiza la viabilidad más allá del aspecto técnico, analizando los ejes temporal y de dominio:
 
-La propuesta es completamente viable de ejecutar en los plazos académicos previstos.
+### 11.1. Viabilidad Técnica
+El equipo cuenta con conocimientos previos sólidos en diseño de bases de datos relacionales SQL, programación web y lógica de negocio adquiridos a lo largo de la carrera. Se descartan funcionalidades de alta complejidad innecesarias para un MVP (como pasarelas de pago bancarias, facturación fiscal o lectura biométrica), manteniendo el alcance acotado y realizable.  
+
+### 11.2. Viabilidad Temporal
+El proyecto está estructurado a lo largo de 14 semanas (agosto a noviembre de 2026), subdivididas en hitos incrementales claros. La carga horaria estimada es de aproximadamente 8 a 10 horas semanales por integrante, lo que resulta compatible con las restantes obligaciones académicas del equipo.La separación en arquitectura cliente-servidor permite el desarrollo en paralelo: mientras una integrante avanza con el modelado de datos y los endpoints de la API, la otra puede trabajar en la maquetación y componentes de React consumiendo datos simulados (mock data).
+
+### 11.3. Viabilidad de Dominio y Negocio (Conocimiento Operativo)
+El modelo de negocio y flujo de trabajo de un gimnasio con clases y cupos limitados (CrossFit, Pilates, entrenamiento funcional, yoga) es un dominio conocido y de fácil observación empírica.Se relevó la operativa estándar: venta de pases/paquetes con créditos, publicación de grilla semanal, reserva previa y toma de asistencia por parte del instructor.  Al tratarse de un problema recurrente en centros deportivos de barrio, las reglas de negocio resultan claras y no requieren validaciones regulatorias complejas, lo que reduce drásticamente el riesgo de desviaciones funcionales durante el desarrollo. 

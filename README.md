@@ -139,6 +139,14 @@ Se adopta una arquitectura desacoplada Cliente-Servidor (SPA + API REST), que pe
 | Plataforma Cloud (Hosting) | Vercel (Frontend) / Render (Backend y DB) | Despliegue online continuo y desacoplado para garantizar alta disponibilidad. |
 | Control de versiones | Git y GitHub | Repositorio único y gestión ágil de tareas (Issues / Projects). |
 
+### Justificación del stack tecnológico y arquitectura
+
+- **Arquitectura Desacoplada (SPA + API REST):** Separa claramente las responsabilidades visuales de la lógica de negocio, optimiza la velocidad de navegación del usuario sin recargas completas y desacopla el cliente para eventuales extensiones futuras (como una app móvil).
+- **Frontend (React):** Facilita la construcción de interfaces dinámicas y modulares basadas en componentes reutilizables (tablas de horarios, calendarios de disponibilidad, modales de confirmación) y un manejo de estado reactivo para actualizar cupos en tiempo real.
+- **Backend (Node.js):** Ofrece un modelo asíncrono y no bloqueante idóneo para soportar múltiples consultas e inscripciones concurrentes, aprovechando el mismo lenguaje (JavaScript) en todo el ciclo de desarrollo para mayor agilidad y cohesión en el equipo.
+- **Base de Datos Relacional SQL (MySQL / PostgreSQL):** La naturaleza del negocio exige consistencia estricta. El modelo relacional asegura integridad referencial mediante claves foráneas y garantiza transacciones ACID para evitar condiciones de carrera (*race conditions*) cuando dos socios intentan reservar el último cupo en simultáneo.
+- **Plataformas Cloud (Vercel y Render):** Permiten un despliegue continuo integrado a GitHub con costos nulos para la etapa académica y alta disponibilidad para la evaluación del proyecto.
+
 ## 8. Organización del trabajo, metodología y comunicación
 
 ### 8.1. Metodología de trabajo y gestión de tareas

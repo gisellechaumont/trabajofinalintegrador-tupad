@@ -74,17 +74,12 @@ Desarrollar una aplicación web (Frontend React + Backend Node.js) que permita a
 
 ### 3.2. Objetivos específicos
 
-- Permitir el acceso al sistema mediante usuarios debidamente autenticados con tokens JWT.
-- Diferenciar las funcionalidades disponibles según los roles: Administrador, Profesor y Socio.
-- Registrar, modificar, consultar y desactivar socios y profesores.
-- Administrar los planes o paquetes de clases ofrecidos por el establecimiento.
-- Programar clases indicando actividad, profesor, fecha, horario y cupo máximo permitido.
-- Permitir a los socios consultar la disponibilidad de clases e inscribirse o cancelar de forma autónoma desde una interfaz React intuitiva.
-- Evitar reservas duplicadas o por encima del cupo asignado a través de validaciones backend robustas.
-- Proveer un módulo interactivo para que los profesores registren la presencia o ausencia en sus clases.
-- Implementar un panel informativo para la consulta operativa de la administración.
-- Desplegar el Frontend y Backend en entornos online accesibles en la nube (Vercel y Render).
-- Documentar la arquitectura, API REST, base de datos y funcionamiento general en el repositorio único.
+- **OE-01 (Integridad operativa):** Reducir a 0% los casos de sobrecupo e inscripciones duplicadas mediante validaciones concurrentes y atómicas en el backend.
+- **OE-02 (Eficiencia administrativa):** Disminuir en un estimado del 70% el tiempo invertido por la administración en la coordinación manual de reservas, consultas de disponibilidad y asignación de turnos.
+- **OE-03 (Autonomía del usuario):** Lograr que al menos el 80% de las reservas y cancelaciones de clases sean autogestionadas directamente por los socios a través de la interfaz web.
+- **OE-04 (Trazabilidad y control):** Garantizar el 100% de visibilidad y control sobre el estado, vencimiento y consumo de clases de los paquetes contratados por cada socio activo.
+- **OE-05 (Confiabilidad en presentismo):** Asegurar el registro digital y centralizado del presentismo al finalizar cada clase, eliminando discrepancias originadas por planillas desconectadas o registros en papel.
+- **OE-06 (Calidad y entrega):** Desarrollar, desplegar en la nube (Vercel / Render) y validar un MVP funcional cubriendo el ciclo operativo completo dentro del plazo estipulado por la cátedra.
 
 ## 4. Usuarios y roles del sistema
 

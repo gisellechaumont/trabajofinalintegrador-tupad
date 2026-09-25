@@ -47,8 +47,6 @@ La documentación completa del proyecto se encuentra en la carpeta [`docs`](docs
 * [Módulos del sistema](docs/modulos.md)
   Catálogo de módulos, responsabilidades, permisos, dependencias y criterios de aceptación.
 
-* [Diseño de la base de datos](docs/base-de-datos.md)
-  Modelo relacional, entidades, relaciones, restricciones y diccionario de datos.
 
 ## Enlaces del proyecto
 

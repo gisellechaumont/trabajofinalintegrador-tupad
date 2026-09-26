@@ -10,7 +10,6 @@
 * **Giselle Chaumont Mohr**
 * **Emilia Gómez Juárez**
 * **Tutor:** Santiago Fonzo
-* **Fecha de entrega propuesta:** 30/08/2026
 
 ---
 
@@ -46,6 +45,9 @@ La documentación completa del proyecto se encuentra en la carpeta [`docs`](docs
 
 * [Módulos del sistema](docs/modulos.md)
   Catálogo de módulos, responsabilidades, permisos, dependencias y criterios de aceptación.
+
+* [Diseño de base de datos](docs/der_gymflow.png)
+  DER con el diseño de base de datos completo.
 
 
 ## Enlaces del proyecto

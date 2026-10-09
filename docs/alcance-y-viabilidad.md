@@ -1,4 +1,4 @@
-# Alcance, arquitectura y viabilidad
+# Alcance y viabilidad
 
 ## Alcance funcional (MVP) y exclusiones
 
@@ -37,38 +37,6 @@ Para garantizar la viabilidad y calidad en los plazos estipulados, quedan fuera 
 * **RN-09:** Para realizar una inscripción, el socio debe contar con un paquete activo y clases disponibles.
 * **RN-10:** La asistencia sólo puede registrarse para socios debidamente inscriptos en la clase.
 * **RN-11:** Todas las validaciones de negocio críticas se ejecutan y resuelven en el backend.
-
-## Stack tecnológico y arquitectura propuesta
-
-Se adopta una arquitectura desacoplada Cliente-Servidor (SPA + API REST), que permite una experiencia de usuario fluida y reactiva en el Frontend (React), mientras el Backend (Node.js) procesa la lógica de negocio y persistencia.
-
-| Componente                 | Tecnología seleccionada                           | Descripción / Rol                                                                         |
-| -------------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| Frontend (SPA)             | React (JavaScript / CSS / Tailwind o Bootstrap)   | Interfaz de usuario modular, interactiva y responsive basada en componentes.              |
-| Backend (API REST)         | Node.js                                           | Servicio backend para procesamiento de reglas de negocio, endpoints REST y autenticación. |
-| Base de datos              | Base de datos relacional SQL (MySQL / PostgreSQL) | Persistencia relacional robusta con soporte transaccional y claves foráneas.              |
-| Plataforma Cloud (Hosting) | Vercel (Frontend) / Render (Backend y DB)         | Despliegue online continuo y desacoplado para garantizar alta disponibilidad.             |
-| Control de versiones       | Git y GitHub                                      | Repositorio único y gestión ágil de tareas (Issues / Projects).                           |
-
-### Justificación del stack tecnológico y arquitectura
-
-* **Arquitectura Desacoplada (SPA + API REST):** Separa claramente las responsabilidades visuales de la lógica de negocio, optimiza la velocidad de navegación del usuario sin recargas completas y desacopla el cliente para eventuales extensiones futuras (como una app móvil).
-* **Frontend (React):** Facilita la construcción de interfaces dinámicas y modulares basadas en componentes reutilizables (tablas de horarios, calendarios de disponibilidad, modales de confirmación) y un manejo de estado reactivo para actualizar cupos en tiempo real.
-* **Backend (Node.js):** Ofrece un modelo asíncrono y no bloqueante idóneo para soportar múltiples consultas e inscripciones concurrentes, aprovechando el mismo lenguaje (JavaScript) en todo el ciclo de desarrollo para mayor agilidad y cohesión en el equipo.
-* **Base de Datos Relacional SQL (MySQL / PostgreSQL):** La naturaleza del negocio exige consistencia estricta. El modelo relacional asegura integridad referencial mediante claves foráneas y garantiza transacciones ACID para evitar condiciones de carrera (*race conditions*) cuando dos socios intentan reservar el último cupo en simultáneo.
-* **Plataformas Cloud (Vercel y Render):** Permiten un despliegue continuo integrado a GitHub con costos nulos para la etapa académica y alta disponibilidad para la evaluación del proyecto.
-
-## Estructura del repositorio único
-
-```text
-gymflow/
-├── frontend/
-├── backend/
-├── database/
-├── docs/
-├── README.md
-└── .gitignore
-```
 
 ## Viabilidad
 

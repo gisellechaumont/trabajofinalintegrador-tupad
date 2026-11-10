@@ -1,0 +1,30 @@
+{
+  "name": "gymflow-giselle",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Base compartida y módulos de Giselle - Trabajo Final Integrador UTN TUPaD",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "setup": "node scripts/setup.mjs && npm run db:generate",
+    "dev": "concurrently -k -n API,WEB -c green,cyan npm:dev:backend npm:dev:frontend",
+    "dev:backend": "npm run dev -w backend",
+    "dev:frontend": "npm run dev -w frontend",
+    "build": "npm run build -w backend && npm run build -w frontend",
+    "typecheck": "npm run typecheck --workspaces",
+    "db:generate": "npm run db:generate -w backend",
+    "db:migrate": "npm run db:migrate -w backend",
+    "db:seed": "npm run db:seed -w backend",
+    "test": "npm run test -w frontend",
+    "test:integration": "npm run test:integration -w backend",
+    "verify": "npm run typecheck && npm run build && npm test && npm run test:integration"
+  },
+  "devDependencies": {
+    "concurrently": "9.2.5"
+  }
+}

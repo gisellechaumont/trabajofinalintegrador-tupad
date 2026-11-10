@@ -1,0 +1,19 @@
+name: gymflow
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: gymflow
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Ejecutar npm run setup primero}
+      POSTGRES_DB: gymflow
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - gymflow_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gymflow -d gymflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+volumes:
+  gymflow_pgdata:

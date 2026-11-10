@@ -25,6 +25,7 @@
     "verify": "npm run typecheck && npm run build && npm test && npm run test:integration"
   },
   "devDependencies": {
+    "@types/node": "^26.6.6",
     "concurrently": "9.2.5"
   }
 }

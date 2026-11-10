@@ -1,0 +1,105 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                  Int             @id @default(autoincrement())
+  name                String          @db.VarChar(120)
+  email               String          @unique @db.VarChar(255)
+  passwordHash        String          @map("password_hash") @db.VarChar(255)
+  role                String          @db.VarChar(20)
+  active              Boolean         @default(true)
+  taughtClasses       Class[]         @relation("ProfessorClasses")
+  packages            MemberPackage[]
+  enrollments         Enrollment[]    @relation("MemberEnrollments")
+  recordedAttendances Enrollment[]    @relation("AttendanceRecorder")
+
+  @@map("users")
+}
+
+model Activity {
+  id          Int     @id @default(autoincrement())
+  name        String  @db.VarChar(100)
+  description String? @db.VarChar(1000)
+  active      Boolean @default(true)
+  classes     Class[]
+
+  // El índice único lower(btrim(name)) vive en la migración SQL.
+  @@map("activities")
+}
+
+model Class {
+  id          Int          @id @default(autoincrement())
+  activityId  Int          @map("activity_id")
+  professorId Int          @map("professor_id")
+  startsAt    DateTime     @map("starts_at") @db.Timestamptz(6)
+  endsAt      DateTime     @map("ends_at") @db.Timestamptz(6)
+  capacity    Int
+  cancelled   Boolean      @default(false)
+  activity    Activity     @relation(fields: [activityId], references: [id], onDelete: Restrict)
+  professor   User         @relation("ProfessorClasses", fields: [professorId], references: [id], onDelete: Restrict)
+  enrollments Enrollment[]
+
+  @@unique([activityId, professorId, startsAt], map: "classes_unique_schedule")
+  @@index([startsAt], map: "classes_starts_at_idx")
+  @@index([professorId, startsAt], map: "classes_professor_idx")
+  @@map("classes")
+}
+
+model PackageType {
+  id           Int             @id @default(autoincrement())
+  name         String          @db.VarChar(100)
+  classCredits Int             @map("class_credits")
+  durationDays Int             @map("duration_days")
+  active       Boolean         @default(true)
+  packages     MemberPackage[]
+
+  @@map("package_types")
+}
+
+model MemberPackage {
+  id               Int          @id @default(autoincrement())
+  memberId         Int          @map("member_id")
+  packageTypeId    Int          @map("package_type_id")
+  startsOn         DateTime     @map("starts_on") @db.Date
+  expiresOn        DateTime     @map("expires_on") @db.Date
+  initialCredits   Int          @map("initial_credits")
+  remainingCredits Int          @map("remaining_credits")
+  assignedAt       DateTime     @default(now()) @map("assigned_at") @db.Timestamptz(6)
+  member           User         @relation(fields: [memberId], references: [id], onDelete: Restrict)
+  packageType      PackageType  @relation(fields: [packageTypeId], references: [id], onDelete: Restrict)
+  enrollments      Enrollment[]
+
+  @@unique([memberId, packageTypeId, startsOn], map: "member_packages_unique_assignment")
+  @@unique([id, memberId], map: "member_packages_id_member_unique")
+  @@index([memberId, expiresOn, assignedAt, id], map: "member_packages_selection_idx")
+  @@map("member_packages")
+}
+
+model Enrollment {
+  id                   Int           @id @default(autoincrement())
+  classId              Int           @map("class_id")
+  memberId             Int           @map("member_id")
+  memberPackageId      Int           @map("member_package_id")
+  cancelled            Boolean       @default(false)
+  createdAt            DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  cancelledAt          DateTime?     @map("cancelled_at") @db.Timestamptz(6)
+  creditRefunded       Boolean       @default(false) @map("credit_refunded")
+  attendanceStatus     String        @default("PENDING") @map("attendance_status") @db.VarChar(10)
+  attendanceRecordedBy Int?          @map("attendance_recorded_by")
+  attendanceRecordedAt DateTime?     @map("attendance_recorded_at") @db.Timestamptz(6)
+  class                Class         @relation(fields: [classId], references: [id], onDelete: Restrict)
+  member               User          @relation("MemberEnrollments", fields: [memberId], references: [id], onDelete: Restrict)
+  package              MemberPackage @relation(fields: [memberPackageId, memberId], references: [id, memberId], onDelete: Restrict, map: "reservation_package_owner")
+  attendanceRecorder   User?         @relation("AttendanceRecorder", fields: [attendanceRecordedBy], references: [id], onDelete: Restrict)
+
+  // CHECK e índice único parcial por socio/clase: ver migration.sql.
+  @@index([memberId, createdAt], map: "reservations_member_idx")
+  @@index([memberPackageId], map: "reservations_package_idx")
+  @@map("class_reservations")
+}

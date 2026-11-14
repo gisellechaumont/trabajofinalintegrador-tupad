@@ -128,6 +128,3 @@ Comandos individuales:
 - Pruebas unitarias y de componentes (Vitest): `npm test`
 - Pruebas de integración HTTP contra base PostgreSQL real (`gymflow_test`): `npm run test:integration`
 
-```[cite: 2, 3]
-
-```

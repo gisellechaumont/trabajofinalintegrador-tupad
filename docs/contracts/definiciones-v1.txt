@@ -1,0 +1,263 @@
+REFERENCIA DE COORDINACIÓN PREVIA (3/11/2026)
+
+Este archivo conserva íntegra la versión 1 de las definiciones para que el paquete de código sea autosuficiente. Sus menciones a una base todavía no implementada describen el estado del 3/11: la base y los ABM de Giselle sí están implementados en esta entrega del 4/11. Para versiones de dependencias, instalación y puntos de montaje actuales, prevalecen README.md y docs/integracion-emilia.md. Las reglas operativas son la referencia de coordinación de Emilia, no una aprobación del tutor.
+
+GYMFLOW
+Definiciones para desarrollar por separado
+Giselle Chaumont Mohr / Emilia Gómez Juárez
+Trabajo Final Integrador - UTN TUPaD
+Versión de coordinación 1.0 - 3 de noviembre de 2026
+
+1. QUÉ CONTIENE ESTA ENTREGA
+
+Este documento fija una base de trabajo común para que cada integrante implemente módulos completos sin coincidir en horarios. Acompaña al nuevo reparto de Trello. No es la aplicación terminada ni una constancia de aprobación del tutor.
+
+Se revisó nuevamente main del repositorio: de4d4dd6af79613723f241fbee04c9c4912d9be0. La descarga del 3/11 conserva ese commit. Se leyeron README, propuesta, alcance, arquitectura, planificación, módulos, diseño de interfaz, wireframes, SQL y DER; además, las reglas confirmadas del tablero.
+
+Los requisitos funcionales proceden de esos documentos. Los nombres concretos de endpoints, formatos de JSON, reglas de fechas, estructura de archivos y detalles de concurrencia que faltaban se fijan aquí como decisiones técnicas de coordinación. No se presentan como consignas adicionales de la facultad ni como acuerdos ya aprobados por el tutor.
+
+Esta versión sustituye al reparto aleatorio en la asignación de las 40 tarjetas, no a los requisitos de la cátedra. Ante una corrección del tutor, actualizar esta versión y avisar por escrito a la otra integrante antes de cambiar el contrato.
+
+Archivos del paquete:
+- Definiciones_GymFlow.pdf: esta guía para lectura y revisión.
+- Definiciones_GymFlow.txt: texto editable de la misma guía.
+- openapi.json: rutas, cuerpos, respuestas, tipos y permisos de la API.
+- modelo_objetivo.sql: definición del modelo acordado para una base vacía; no ejecutar sobre una base existente como si fuera una migración.
+- contratos.ts: tipos HTTP y puntos de conexión entre módulos, sin implementación.
+- reparto.json: las 40 tarjetas con su responsable vigente y estimación.
+- Reparto_por_modulos.txt: desglose organizativo y preparación de la base.
+- LEEME.txt: orden de lectura, estado real y comprobaciones realizadas.
+
+2. REPARTO VIGENTE
+
+Giselle - 20 tarjetas / 80 puntos estimados:
+ARQ-03 y ARQ-04; TEC-03 a TEC-08; HU-01 a HU-12.
+Base backend/frontend, PostgreSQL, esquema completo, errores comunes, autenticación y permisos, socios, profesores y actividades.
+
+Emilia - 20 tarjetas / 84 puntos estimados:
+HU-13 a HU-32.
+Clases y cupos, tipos de paquete, asignaciones, inscripciones y cancelaciones, asistencias, historiales y panel administrativo.
+
+Cada módulo incluye pantalla, API, validaciones locales, persistencia, pruebas y documentación. No se divide un mismo ABM entre ambas. La diferencia de cuatro puntos evita separar el circuito de cupos y créditos. Los puntos son esfuerzo relativo estimado, no horas; tampoco miden por separado todos los trabajos de cierre.
+
+Landing, perfil propio y cambio voluntario de contraseña ya figuran en el diseño de interfaz. Quedan bajo Giselle si se conserva ese diseño, dentro de los archivos comunes/auth; no son funciones nuevas inventadas aquí ni tarjetas nuevas. Su implementación debe hacerse visible en los checklists y en la reestimación del trabajo. El contrato incluye esas dos operaciones de cuenta para no dejarlas indefinidas.
+
+El panel HU-32 permanece asignado a Emilia. Según los documentos es secundario y primer candidato a recorte si el tutor acuerda reducir alcance; no se elimina por cuenta propia.
+
+3. STACK Y FORMA DE TRABAJO
+
+Se mantiene el stack elegido en docs/arquitectura-y-stack.md: React + TypeScript; Node.js + Express + TypeScript; PostgreSQL; Prisma; JWT. Un único repositorio y un monolito modular, no microservicios.
+
+Se propone Vite para el arranque del frontend y CSS común para implementar el sistema visual existente, sin incorporar un segundo sistema de componentes. El manifiesto y los lockfiles de la base inicial fijarán las versiones exactas instaladas. No se afirma que esas versiones o dependencias ya existan en main: hoy frontend y backend solo tienen .gitkeep.
+
+Configuración local acordada: frontend http://localhost:5173, API http://localhost:3000/api/v1. Cada integrante usa su propia base PostgreSQL. Variables: DATABASE_URL, JWT_SECRET, JWT_ISSUER=gymflow, JWT_AUDIENCE=gymflow-web, PORT=3000, CORS_ORIGIN=http://localhost:5173; frontend VITE_API_URL=http://localhost:3000/api/v1. JWT_SECRET nunca pasa al frontend ni al repositorio.
+
+Las URL de Vercel/Render son parte del despliegue posterior; no hay URL online creada por este paquete. El cliente HTTP debe usar VITE_API_URL, no direcciones codificadas dentro de cada pantalla.
+
+4. ARCHIVOS QUE PUEDE CAMBIAR CADA UNA
+
+Giselle mantiene:
+- backend/src/modules/auth/, users/ y activities/.
+- frontend/src/features/auth/, users/ y activities/.
+- backend/src/config/, middlewares/ y shared/.
+- backend/prisma/schema.prisma, migrations/, database/ y seed común.
+- frontend/src/shared/, app/providers/, estilos globales y cliente HTTP.
+- app.ts, server.ts, main.tsx y montaje general de rutas/menú.
+- package.json, lockfiles, configuración común y README raíz.
+
+Emilia mantiene:
+- backend/src/modules/classes/, packages/, enrollments/, attendance/ y dashboard/.
+- frontend/src/features/classes/, packages/, enrollments/, attendance/ y dashboard/.
+- backend/src/modules/operational.routes.ts, registro de sus rutas.
+- frontend/src/features/operational.routes.tsx, registro de sus pantallas y menú.
+- Pruebas, fixtures y documentación de sus módulos, en archivos separados.
+
+Los dos archivos operational.routes son puntos de montaje a preparar en la base inicial. Los nombres son una decisión técnica nueva compatible con la estructura ya documentada. Permiten que Emilia conecte sus módulos sin editar el arranque común. El frontend no tendrá dos aplicaciones ni dos proveedores de sesión.
+
+Cada carpeta contiene solo las capas que realmente necesita: rutas, controlador, servicio, repositorio, validación y tipos. No centralizar todos los controladores, formularios o pruebas en un archivo que tengan que tocar las dos.
+
+Emilia puede leer usuarios y actividades del modelo compartido para validar sus operaciones. No reimplementa el ABM de usuarios ni llama a controladores HTTP de Giselle desde el backend. Sus propios repositorios pueden consultar Prisma respetando los tipos y campos acordados. Esto mantiene un monolito y evita dependencias artificiales entre servicios.
+
+Si falta una dependencia, campo o utilidad común, Emilia deja un pedido concreto y Giselle modifica el archivo compartido. Después de entregar la base, no se cambian unilateralmente contratos, esquema o lockfiles.
+
+5. CONTRATO HTTP COMÚN
+
+Prefijo: /api/v1. JSON con campos camelCase; tablas/columnas SQL snake_case. Identificadores: enteros positivos. Instantes: RFC 3339 con zona u offset; el backend responde en UTC con Z. Fechas civiles: YYYY-MM-DD. Zona de negocio: America/Argentina/Buenos_Aires; no interpretar fechas civiles como UTC en el navegador.
+
+Respuesta de un recurso: {"data": {...}}. Listado: {"data": [...], "meta": {"page": 1, "pageSize": 20, "total": 0}}. page >= 1; pageSize entre 1 y 100, por defecto 20. Orden estable por id ascendente salvo clases (startsAt, id), paquetes (expiresOn, assignedAt, id) e historial (startsAt descendente, id descendente).
+
+Los filtros no otorgan permisos: memberId o professorId enviados por un cliente nunca sustituyen la identidad autenticada. Los listados restringidos aplican el alcance en la consulta, antes de contar o paginar. Recurso ajeno: 403 sin datos privados; inexistente: 404.
+
+Error: {"error": {"code": "CLASS_FULL", "message": "No hay cupos disponibles.", "fields": {}}}. fields relaciona nombres de campos con mensajes cuando corresponde; nunca contiene trazas SQL, hashes ni tokens.
+
+Códigos HTTP: 200 consulta/actualización/acción exitosa; 201 creación; 204 cambio de contraseña sin cuerpo; 400 JSON o filtros inválidos; 401 credenciales/sesión inválida; 403 permisos; 404 inexistente; 409 duplicado o conflicto de estado/negocio; 422 campos inválidos; 500 error inesperado sin detalles internos.
+
+Códigos estables de negocio: EMAIL_IN_USE, NAME_IN_USE, INACTIVE_USER, INVALID_PROFESSOR, INACTIVE_ACTIVITY, CLASS_FULL, CLASS_CANCELLED, CLASS_STARTED, ALREADY_ENROLLED, NO_USABLE_PACKAGE, CANCELLATION_WINDOW_CLOSED, ALREADY_CANCELLED, CAPACITY_BELOW_ENROLLMENTS, CLASS_HAS_ENROLLMENTS, INVALID_ATTENDANCE, PACKAGE_ASSIGNMENT_EXISTS. Para 401 de login usar INVALID_CREDENTIALS sin revelar si el correo existe o la cuenta está inactiva.
+
+No hay DELETE físico de usuarios, clases, actividades, tipos o inscripciones. Se conservan estados e historial. Tampoco hay endpoints de pagos, listas de espera, notificaciones o recuperación automática de contraseña.
+
+6. SESIÓN, CONTRASEÑAS Y PERMISOS
+
+Roles técnicos: ADMIN, PROFESSOR y MEMBER. Las etiquetas visibles son Administrador, Profesor y Socio. Un usuario inactivo no puede iniciar sesión ni operar aunque conserve un JWT emitido anteriormente: el middleware consulta el usuario actual y su rol en cada petición privada.
+
+Authorization: Bearer <token>. JWT firmado con HS256, algoritmo permitido explícitamente; sub es el id del usuario como texto; iat y exp, duración de 3600 segundos; iss=gymflow; aud=gymflow-web. Se verifica firma, algoritmo, vencimiento, emisor y audiencia. El rol del JWT no reemplaza al rol actual de la base.
+
+El contexto que recibe un módulo del backend es req.user = {id, role}; nunca un id que provenga del cuerpo. La base entrega requireAuth y allowRoles(...roles). La propiedad del recurso sigue siendo responsabilidad del módulo: por ejemplo, Emilia verifica que la clase pertenezca al profesor.
+
+Contraseñas nuevas: de 12 a 128 caracteres, sin truncarlas ni aplicar trim. Hash Argon2id con sal individual; parámetros mínimos de coordinación: memoryCost 19456 KiB, timeCost 2, parallelism 1. Nunca devolver passwordHash. La biblioteca concreta y su versión se fijan en el manifiesto inicial. Validar credenciales con la función de verificación de la biblioteca, no comparando hashes manualmente.
+
+Token solo en memoria del proveedor de sesión React, no en localStorage ni en la URL. Recargar la pestaña vuelve a pedir login: es una simplificación explícita del MVP. Al cerrar sesión se borra el token y los datos privados del frontend. No se implementan refresh tokens ni revocación centralizada, que los módulos excluyen. Un token copiado sigue válido hasta expirar mientras la cuenta permanezca activa; no afirmar que logout lo revoca en el servidor.
+
+Cambiar contraseña requiere la actual y la nueva; invalida la sesión del navegador mediante limpieza local y nuevo login. No promete revocar otros JWT emitidos. Producción usa HTTPS y CORS limitado al origen del frontend. No agregar un bypass de autenticación para integrar la parte de Emilia.
+
+Matriz resumida:
+- ADMIN: gestiona socios/profesores, actividades, clases, tipos, paquetes e inscripciones; registra asistencia e inspecciona historiales y panel.
+- PROFESSOR: consulta solo sus clases, su lista de inscriptos y sus asistencias; puede registrarlas/corregirlas. No consulta paquetes de otros ni listados generales de socios.
+- MEMBER: consulta actividades activas y programación pública para usuarios autenticados; ve y gestiona únicamente sus inscripciones, paquetes e historial.
+- Todos: consultar su identidad, editar nombre/correo propios y cambiar su contraseña, según UI-03 y UI-04. No pueden cambiarse rol ni estado.
+
+La vista de calendario general para profesores contradice RN-04 y la matriz de módulos. Para esta base se conserva el permiso más restrictivo: solo clases asignadas. El contrato no habilita calendario ajeno ni acceso a inscriptos de otras clases. Es una resolución explícita para trabajar, no una aprobación atribuida al tutor; si confirma el calendario general, cambiar solo el alcance de lectura básica sin abrir asistencia ni datos personales de clases ajenas.
+
+7. MODELO DE DATOS OBJETIVO
+
+Se mantienen las seis entidades del DER. Asistencia vive en la inscripción, no en una segunda tabla con el mismo estado. El nombre SQL class_reservations se conserva; el modelo de dominio y HTTP se llama Enrollment. Prisma podrá usar @@map("class_reservations") y @map para columnas sin duplicar entidades.
+
+users: id; name (120); email normalizado (255, único); password_hash; role; active. No cambios de rol en PATCH ni borrado físico. Las cuentas ADMIN iniciales son del seed; no se agrega una pantalla de creación de administradores.
+
+activities: id; name (100); description nullable (1000); active. Nombre sin duplicados por mayúsculas o espacios laterales.
+
+classes: id; activity_id; professor_id; starts_at y ends_at TIMESTAMPTZ; capacity entero > 0; cancelled. Ocupados = inscripciones no canceladas; disponibles = capacity - ocupados. No guardar un segundo saldo de cupos.
+
+package_types: id; name (100, único sin distinguir mayúsculas); class_credits y duration_days enteros > 0; active. Desactivar un tipo impide nuevas asignaciones, pero no invalida los paquetes ya entregados.
+
+member_packages: id; member_id; package_type_id; starts_on y expires_on DATE; initial_credits; remaining_credits; assigned_at TIMESTAMPTZ. Guardar créditos iniciales como snapshot: modificar el tipo no cambia saldos ni vigencia de asignaciones existentes. La fecha de vencimiento también es un snapshot. El nombre mostrado proviene del tipo vigente.
+
+class_reservations: id; class_id; member_id; member_package_id; cancelled; created_at; cancelled_at nullable; credit_refunded; attendance_status (PENDING, PRESENT, ABSENT); attendance_recorded_by y attendance_recorded_at nullable. El id del socio se guarda para garantizar unicidad por persona y clase; una FK compuesta comprueba que el paquete pertenece a ese socio.
+
+Cada inscripción nace con asistencia PENDING y sin autor/fecha de registro. Registrar PRESENT o ABSENT fija ambos. Corregir reemplaza el estado y la última persona/fecha que lo registró; no se promete un historial completo de cada edición. No se almacenan motivo ni autor de cancelación, tal como dice el diseño. cancelled_at y credit_refunded permiten controlar estado y devolución, no agregan un motivo.
+
+Restricciones en SQL: saldo entre cero y créditos iniciales; capacidad positiva; fin posterior a inicio; duración/créditos positivos; claves foráneas sin cascadas de borrado; índice único parcial de (class_id, member_id) cuando cancelled=false. Así se impide duplicar una reserva usando dos paquetes distintos y se permite reinscribirse después de cancelar conservando las filas antiguas.
+
+Unicidad de asignación: mismo socio + tipo + fecha de inicio no se asigna dos veces; devuelve 409. Sí puede tener varios tipos o asignaciones de fechas distintas, con vigencias superpuestas.
+
+Los CHECK e índices parciales del SQL son parte del modelo, aunque Prisma no los exprese directamente. Incorporarlos como SQL en la migración inicial; no confiar solo en el esquema generado. modelo_objetivo.sql es referencia para una base nueva y no sustituye una migración desde el script publicado.
+
+8. FECHAS, PAQUETES Y ESTADOS DERIVADOS
+
+La vigencia incluye startsOn y expiresOn. Al asignar un tipo de D días: expiresOn = startsOn + D - 1 días calendario, en la zona de negocio. Un paquete de un día vence ese mismo día. Esto precisa la semántica que los documentos no cerraban; el CHECK viejo ya permitía igualdad de fechas.
+
+Un paquete utilizable tiene saldo positivo y cubre tanto la fecha actual de negocio como la fecha de inicio de la clase. El socio debe estar activo. Se elige por expiresOn ascendente, assignedAt ascendente y, como desempate estable, id ascendente. No se obliga al socio a seleccionar ni enviar el paquete manualmente.
+
+Estado de paquete, sin almacenarlo aparte: NOT_STARTED si hoy es anterior a startsOn; EXPIRED si hoy es posterior a expiresOn; EXHAUSTED si está vigente y sin saldo; ACTIVE si está vigente y con saldo positivo. Próximo a vencer = ACTIVE y faltan entre 0 y 7 días calendario inclusive. No incluye vencidos ni sin saldo.
+
+Estado de clase derivado: CANCELLED si cancelled; FINISHED desde endsAt inclusive; IN_PROGRESS desde startsAt inclusive y antes de endsAt; SCHEDULED antes de startsAt. Las inscripciones solo se crean para SCHEDULED. Todas estas comparaciones se resuelven en el servidor.
+
+Para no alterar reservas existentes silenciosamente, una clase con inscripciones activas permite cambiar solo capacity, siempre que no quede por debajo de la ocupación. Cambiar actividad, profesor u horario en ese caso devuelve CLASS_HAS_ENROLLMENTS; la alternativa es cancelar y programar otra clase. Es una política técnica de coordinación propuesta aquí para cerrar un caso no especificado, no una regla confirmada del tablero. Debe revisarse con los criterios de HU-15 antes de adoptar una política distinta.
+
+La programación y edición operan sobre clases futuras. La asistencia se registra desde el inicio; no se marca un socio ausente solo porque todavía no se tomó asistencia. Los estados históricos permanecen consultables.
+
+Desactivar socio/profesor/actividad no borra ni cancela automáticamente clases, reservas o paquetes. Impide operar a la cuenta y usar esa entidad en nuevas operaciones. Los compromisos ya programados requieren gestión explícita del administrador. Así no aparece una cancelación cruzada oculta dentro del módulo de usuarios.
+
+9. INSCRIPCIÓN Y CONCURRENCIA
+
+POST /enrollments recibe classId. MEMBER se inscribe a sí mismo; ADMIN además envía memberId del socio al que asiste. Un MEMBER no puede utilizar memberId para actuar por otra persona. La identidad del profesor nunca habilita una inscripción.
+
+Antes de confirmar, GET /classes/{id}/eligibility devuelve si puede inscribirse, el motivo de rechazo o el paquete seleccionado y su saldo posterior esperado. Es una consulta para la confirmación prevista en el diseño; no reserva lugar ni congela un saldo. El POST vuelve a validar todo.
+
+La operación real es una transacción:
+1. Bloquear la fila de la clase y volver a comprobar estado, horario y cupo.
+2. Bloquear la fila del socio; comprobar estado/rol. Esto serializa también sus reservas simultáneas en clases diferentes.
+3. Buscar paquetes utilizables, bloquearlos por id ascendente y seleccionar entre ellos por expiresOn, assignedAt e id.
+4. Verificar que no exista inscripción activa del mismo socio/clase.
+5. Insertar la reserva, descontar exactamente un crédito y confirmar juntos.
+
+Usar SELECT ... FOR UPDATE parametrizado dentro de la transacción de Prisma, o un mecanismo equivalente que pruebe las mismas garantías. No interpolar valores del usuario en SQL. Todos los flujos que modifican cupos/saldos respetan el mismo orden de bloqueo: clase, socios por id, paquetes por id, reservas por id. Si una transacción falla, no queda un descuento parcial.
+
+La restricción única parcial es una protección adicional, no reemplaza el control concurrente de cupo y saldo. Capturar conflictos y responder con el código de negocio correspondiente, no con un 500 que revele SQL.
+
+10. CANCELACIONES Y ASISTENCIA
+
+Cancelación individual: permitida hasta startsAt menos dos horas, inclusive. Exactamente dos horas antes sí se acepta; un instante después ya no. La petición tardía se rechaza con 409 CANCELLATION_WINDOW_CLOSED, sin liberar cupo ni devolver crédito. Esta regla se toma de Trello confirmado y del diseño, por encima del texto viejo de MOD-06 que permitía cancelar tarde.
+
+Una cancelación válida marca cancelled, fija cancelledAt, suma un crédito al mismo paquete y marca creditRefunded, todo dentro de una transacción. Si el paquete ya venció, recupera el saldo contable pero no se extiende su fecha. Repetir cancelación devuelve 409 ALREADY_CANCELLED y no vuelve a acreditar. Administración no elude el límite individual por un parámetro oculto.
+
+Cancelar una clase es distinto: ADMIN cancela la clase y todas sus reservas activas, devolviendo cada crédito al paquete de origen sin aplicar el límite de dos horas. No se reembolsa por segunda vez una inscripción ya cancelada. La operación es atómica y la repetición se rechaza con 409, como exige HU-16. Si existía asistencia, se conserva el dato histórico pero el historial muestra la clase cancelada y no la computa en el porcentaje de asistencia.
+
+PRESENT/ABSENT se registra solo en inscripciones confirmadas y clases no canceladas, desde startsAt. ADMIN puede hacerlo en cualquiera; PROFESSOR solo en la asignada. MEMBER nunca registra asistencia. La ausencia no genera devolución.
+
+PUT /classes/{id}/attendance recibe una lista sin ids repetidos. Valida permisos y pertenencia de todas las inscripciones antes de guardar; si una falla, rechaza el lote entero. Marcar todos presentes se construye en el frontend y envía esa misma operación, no agrega una regla o API diferente. El botón Restablecer solo limpia cambios sin guardar; no borra registros del servidor.
+
+Porcentaje de asistencia = PRESENT / (PRESENT + ABSENT) * 100, redondeado a una decimal. Excluir PENDING y cancelaciones; si el denominador es cero, devolver null y mostrar 'Sin registros', no 0% ficticio.
+
+11. MAPA DE API Y PANTALLAS
+
+El detalle formal de campos obligatorios, nulos, enums y filtros está en openapi.json. Esta tabla textual resume propiedad y alcance:
+
+Giselle:
+- POST /auth/login; GET /auth/me; PATCH /auth/profile; PUT /auth/password.
+- GET/POST /users; GET/PATCH /users/{id}. Solo ADMIN; alta y listados para MEMBER/PROFESSOR. No cambio de rol.
+- GET/POST /activities; GET/PATCH /activities/{id}. Lectura activa para roles autenticados, gestión solo ADMIN.
+
+Emilia:
+- GET/POST /classes; GET/PATCH /classes/{id}; POST /classes/{id}/cancel.
+- GET /classes/{id}/eligibility; GET /classes/{id}/enrollments; PUT /classes/{id}/attendance.
+- GET/POST /package-types; GET/PATCH /package-types/{id}. Solo ADMIN.
+- GET/POST /member-packages; GET /member-packages/{id}. ADMIN asigna; MEMBER solo lee los propios.
+- GET/POST /enrollments; GET /enrollments/{id}; POST /enrollments/{id}/cancel. ADMIN o socio propietario.
+- GET /history. ADMIN todos, MEMBER propio, PROFESSOR solo clases asignadas y sin datos privados innecesarios.
+- GET /dashboard. Solo ADMIN.
+
+Los resúmenes del inicio del socio/profesor pueden construirse consultando sus listados y el historial. No requieren una segunda implementación de autenticación ni nuevas tablas de métricas.
+
+Rutas de interfaz de Giselle: /, /login, /perfil, /cambiar-contrasena, /admin/socios, /admin/profesores, /admin/actividades y sus formularios/detalles.
+Rutas de Emilia: /admin (panel), /admin/clases, /admin/paquetes, /admin/asistencias, /admin/historial; /socio (inicio), /socio/clases, /socio/inscripciones, /socio/paquetes, /socio/historial; /profesor (inicio), /profesor/clases y /profesor/historial; detalles de clases bajo cada rol. El menú central consume la lista de entradas exportada por cada grupo.
+
+El detalle administrativo de usuario puede enlazar a /admin/paquetes?memberId={id} y /admin/historial?memberId={id}, mantenidos por Emilia. No insertar un segundo formulario de paquetes dentro de users. Si se desean pestañas embebidas, son componentes de Emilia con props memberId: no los mantiene Giselle.
+
+12. SISTEMA VISUAL COMPARTIDO
+
+Se conserva el diseño existente: Montserrat, texto general 16 px y etiquetas 14 px como referencia; principal #245C45, secundario #3F7D5C, fondo #FCFCFA, superficie secundaria #F3F6F3, borde #DCE5DE, texto #202722, texto secundario #667068, error #C24141. No cambiar de paleta por integrante.
+
+Giselle prepara la base de Button, Input, Select, StatusBadge, ConfirmDialog, PageHeader, estado vacío/error/carga y layout autenticado. Emilia prepara el calendario y los componentes específicos de clase/asistencia dentro de sus módulos. No necesita esperar componentes sofisticados: las interfaces de props se fijan primero y se pueden usar controles HTML simples temporalmente.
+
+Cada petición representa carga, vacío, error y contenido; cada acción bloquea doble envío y actualiza saldos/cupos tras el éxito. Los datos del frontend no sustituyen validaciones del backend. Confirmar cancelaciones, asignaciones, inscripción administrativa y correcciones de asistencia.
+
+13. CÓMO EMPIEZA EMILIA SIN ESPERAR LOS ABM
+
+Paso A - Ya, con este paquete: leer reparto y contratos, construir tipos/pantallas de sus módulos y fixtures propios que respeten openapi.json. Puede implementar sus servicios y pruebas contra el esquema objetivo. No cambiar campos por intuición.
+
+Paso B - Base mínima que prepara Giselle: manifiestos/lockfiles, ambas apps arrancando, esquema Prisma/migración completa, middleware de identidad, cliente HTTP/proveedor de sesión y puntos de montaje. Agregar login mínimo real, seed de usuarios y actividades, y README de instalación. Esto sí requiere código y NO está implementado en esta entrega de definiciones.
+
+Paso C - Desde el commit base entregado: cada una abre su rama. Emilia usa su PostgreSQL y el seed para tener socios, profesores y actividades sin esperar sus pantallas de alta. Implementa de principio a fin clases/paquetes/reservas/asistencia y prueba con permisos reales. Giselle completa sus ABM y partes comunes.
+
+Fixtures comunes propuestos: admin@gymflow.test; ana.professor@gymflow.test; juan.member@gymflow.test; laura.member@gymflow.test, más un profesor distinto para pruebas de acceso ajeno. Son datos ficticios del dominio .test. Las claves solo de desarrollo se documentan al crear el seed y se almacenan como hash, nunca reutilizar contraseñas personales. No confiar en el SQL actual con DISABLED_SAMPLE_USER ni en fechas de octubre ya vencidas.
+
+Los escenarios de Emilia crean clases futuras y paquetes válidos relativos a un reloj de prueba. No se codifica la demo para una sola fecha real. Un mock exitoso no prueba la integración; se repite contra API/PostgreSQL cuando esté la base.
+
+14. PRUEBAS MÍNIMAS Y ENTREGA ENTRE INTEGRANTES
+
+Giselle verifica: instalación limpia; login válido/inválido/inactivo; 401 sin token o expirado; 403 por rol; aislamiento de datos; emails únicos normalizados; hash no expuesto; ABM de usuarios/actividades y preservación del historial al desactivar.
+
+Emilia verifica: paquete no vigente/sin saldo; selección por vencimiento y asignación; clase cancelada/iniciada; mismo socio con dos paquetes; capacidad insuficiente; cambio de clase con inscriptos; reingreso tras cancelación; cancelación a 2h exactas y a 1h59m59s; repetición sin doble reembolso; cancelación de clase devolviendo a cada paquete; permiso de profesor asignado; PENDING distinto de ABSENT; corrección de asistencia con autor/fecha.
+
+Pruebas concurrentes reales: dos socios por el último cupo producen una sola confirmación; un socio con un crédito intentando dos clases distintas consume solo un crédito; dos peticiones para la misma inscripción no devuelven dos veces; carrera entre cancelar clase y reservar no deja reservas activas en clase cancelada.
+
+Cada entrega incluye commit/PR, instrucciones, pruebas y resultados, y fixtures necesarios. Giselle integra los archivos comunes, sin reescribir el módulo de Emilia. Si un módulo falla, lo corrige su responsable. La otra integrante puede revisar y dejar observaciones asincrónicamente; no hace falta una llamada simultánea.
+
+Al integrar no se copia una carpeta completa encima de la otra. Se prueba el circuito completo en una rama de integración antes de desplegar. Un merge sin conflictos de texto no garantiza compatibilidad funcional.
+
+15. FUENTES Y DECISIONES A SINCRONIZAR
+
+Repositorio: https://github.com/gisellechaumont/trabajofinalintegrador-tupad
+Versión revisada: https://github.com/gisellechaumont/trabajofinalintegrador-tupad/tree/de4d4dd6af79613723f241fbee04c9c4912d9be0
+Reglas confirmadas: https://trello.com/c/VT4lPIa2
+Tablero y responsables vigentes: https://trello.com/b/cuJchqq8
+
+Actualizar posteriormente, en un cambio documental revisado: MOD-06 para retirar la cancelación tardía contradictoria; permisos de profesor según la resolución elegida; SQL/DER/Prisma con asistencia y unicidad correctas; gestión-y-planificación con el nuevo reparto; README con stack/enlaces actuales. Esta entrega no cambió esos archivos publicados en GitHub.
+
+Referencias técnicas utilizadas para definir el contrato y las garantías:
+- OpenAPI 3.0.3: https://spec.openapis.org/oas/v3.0.3.html
+- Bloqueos de filas PostgreSQL: https://www.postgresql.org/docs/current/explicit-locking.html
+- Hash de contraseñas y Argon2id: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+
+Las decisiones nuevas de coordinación son explícitas: vocabulario HTTP, formato de errores/listas, vencimiento inclusivo, snapshots de créditos, política de cambios con inscriptos, alcance conservador del profesor, sesión sin persistencia y interfaces de montaje. No afirmar que el tutor aprobó estas decisiones ni que las pruebas de la aplicación se ejecutaron por haber validado los documentos.

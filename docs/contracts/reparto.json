@@ -1,0 +1,340 @@
+{
+  "version": "1.0",
+  "fecha": "2026-11-03",
+  "criterio": "Módulos completos; sustituye sorteo previo por pedido de Giselle. No es otro sorteo.",
+  "fuente_tablero": "https://trello.com/b/cuJchqq8",
+  "commit_revisado": "de4d4dd6af79613723f241fbee04c9c4912d9be0",
+  "resumen": {
+    "Giselle": {
+      "tarjetas": 20,
+      "puntos_estimados": 80
+    },
+    "Emilia": {
+      "tarjetas": 20,
+      "puntos_estimados": 84
+    }
+  },
+  "verificacion_trello": "Se comprobaron en la UI las 40 tarjetas con responsable única y este reparto. No se agregaron tarjetas nuevas.",
+  "tareas": [
+    {
+      "id": "ARQ-03",
+      "titulo": "Definir los contratos de la API REST",
+      "puntos": 5,
+      "url": "https://trello.com/c/E7WmR2F8",
+      "estado_original": "En progreso",
+      "responsable": "Giselle"
+    },
+    {
+      "id": "ARQ-04",
+      "titulo": "Definir la estrategia de seguridad y permisos",
+      "puntos": 5,
+      "url": "https://trello.com/c/5H43e9Va",
+      "estado_original": "En progreso",
+      "responsable": "Giselle"
+    },
+    {
+      "id": "TEC-03",
+      "titulo": "Crear y configurar el proyecto backend",
+      "puntos": 3,
+      "url": "https://trello.com/c/f1yKaaPi",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Giselle"
+    },
+    {
+      "id": "TEC-04",
+      "titulo": "Crear y configurar el proyecto frontend",
+      "puntos": 3,
+      "url": "https://trello.com/c/x7sk74Fl",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Giselle"
+    },
+    {
+      "id": "TEC-05",
+      "titulo": "Configurar PostgreSQL en el entorno local",
+      "puntos": 2,
+      "url": "https://trello.com/c/aH0uggk8",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Giselle"
+    },
+    {
+      "id": "TEC-06",
+      "titulo": "Implementar el esquema de datos",
+      "puntos": 8,
+      "url": "https://trello.com/c/VOQYG4oL",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Giselle"
+    },
+    {
+      "id": "TEC-07",
+      "titulo": "Implementar validaciones y manejo global de errores",
+      "puntos": 5,
+      "url": "https://trello.com/c/AEzxGKyT",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Giselle"
+    },
+    {
+      "id": "TEC-08",
+      "titulo": "Configurar JWT y cifrado de contraseñas",
+      "puntos": 5,
+      "url": "https://trello.com/c/goTe2fae",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Giselle"
+    },
+    {
+      "id": "HU-01",
+      "titulo": "Iniciar sesión",
+      "puntos": 5,
+      "url": "https://trello.com/c/a3ao7s0t",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Giselle"
+    },
+    {
+      "id": "HU-02",
+      "titulo": "Cerrar sesión",
+      "puntos": 2,
+      "url": "https://trello.com/c/XXhbxNF2",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Giselle"
+    },
+    {
+      "id": "HU-03",
+      "titulo": "Acceder según el rol",
+      "puntos": 5,
+      "url": "https://trello.com/c/0ZVnuOJq",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Giselle"
+    },
+    {
+      "id": "HU-04",
+      "titulo": "Registrar un socio",
+      "puntos": 5,
+      "url": "https://trello.com/c/RAkJ133k",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Giselle"
+    },
+    {
+      "id": "HU-05",
+      "titulo": "Consultar socios",
+      "puntos": 3,
+      "url": "https://trello.com/c/EeJJuB4f",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Giselle"
+    },
+    {
+      "id": "HU-06",
+      "titulo": "Modificar o cambiar el estado de un socio",
+      "puntos": 5,
+      "url": "https://trello.com/c/aUu4lX40",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Giselle"
+    },
+    {
+      "id": "HU-07",
+      "titulo": "Registrar un profesor",
+      "puntos": 5,
+      "url": "https://trello.com/c/q8Eg9cYM",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Giselle"
+    },
+    {
+      "id": "HU-08",
+      "titulo": "Consultar profesores",
+      "puntos": 3,
+      "url": "https://trello.com/c/XMfpX7Vl",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Giselle"
+    },
+    {
+      "id": "HU-09",
+      "titulo": "Modificar o cambiar el estado de un profesor",
+      "puntos": 3,
+      "url": "https://trello.com/c/FQGmNnbO",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Giselle"
+    },
+    {
+      "id": "HU-10",
+      "titulo": "Crear una actividad",
+      "puntos": 3,
+      "url": "https://trello.com/c/zExUAb30",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Giselle"
+    },
+    {
+      "id": "HU-11",
+      "titulo": "Consultar actividades",
+      "puntos": 2,
+      "url": "https://trello.com/c/QXfZlEXG",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Giselle"
+    },
+    {
+      "id": "HU-12",
+      "titulo": "Modificar o desactivar una actividad",
+      "puntos": 3,
+      "url": "https://trello.com/c/BfTzvn6E",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Giselle"
+    },
+    {
+      "id": "HU-13",
+      "titulo": "Programar una clase",
+      "puntos": 8,
+      "url": "https://trello.com/c/oZsjMQho",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Emilia"
+    },
+    {
+      "id": "HU-14",
+      "titulo": "Consultar clases como administrador",
+      "puntos": 3,
+      "url": "https://trello.com/c/T416OxmE",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Emilia"
+    },
+    {
+      "id": "HU-15",
+      "titulo": "Modificar una clase",
+      "puntos": 5,
+      "url": "https://trello.com/c/rK1Z4PG3",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Emilia"
+    },
+    {
+      "id": "HU-16",
+      "titulo": "Cancelar una clase",
+      "puntos": 5,
+      "url": "https://trello.com/c/FGMCPhUd",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Emilia"
+    },
+    {
+      "id": "HU-17",
+      "titulo": "Consultar clases y cupos como socio",
+      "puntos": 3,
+      "url": "https://trello.com/c/RLHcVv9j",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Emilia"
+    },
+    {
+      "id": "HU-18",
+      "titulo": "Crear un tipo de paquete",
+      "puntos": 3,
+      "url": "https://trello.com/c/OIusCqBh",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Emilia"
+    },
+    {
+      "id": "HU-19",
+      "titulo": "Consultar tipos de paquetes",
+      "puntos": 2,
+      "url": "https://trello.com/c/bWbHfhZP",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Emilia"
+    },
+    {
+      "id": "HU-20",
+      "titulo": "Modificar o desactivar un tipo de paquete",
+      "puntos": 3,
+      "url": "https://trello.com/c/G4IRKbWi",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Emilia"
+    },
+    {
+      "id": "HU-21",
+      "titulo": "Asignar un paquete a un socio",
+      "puntos": 5,
+      "url": "https://trello.com/c/WdCTsqnv",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Emilia"
+    },
+    {
+      "id": "HU-22",
+      "titulo": "Consultar paquetes asignados como administrador",
+      "puntos": 3,
+      "url": "https://trello.com/c/mBArmcdQ",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Emilia"
+    },
+    {
+      "id": "HU-23",
+      "titulo": "Consultar los paquetes propios",
+      "puntos": 3,
+      "url": "https://trello.com/c/TRbuLM5n",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Emilia"
+    },
+    {
+      "id": "HU-24",
+      "titulo": "Inscribirse en una clase",
+      "puntos": 8,
+      "url": "https://trello.com/c/ghqG6OoS",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Emilia"
+    },
+    {
+      "id": "HU-25",
+      "titulo": "Cancelar una inscripción",
+      "puntos": 8,
+      "url": "https://trello.com/c/XalZ6md3",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Emilia"
+    },
+    {
+      "id": "HU-26",
+      "titulo": "Consultar las inscripciones propias",
+      "puntos": 3,
+      "url": "https://trello.com/c/0amVueUP",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Emilia"
+    },
+    {
+      "id": "HU-27",
+      "titulo": "Consultar las clases asignadas",
+      "puntos": 3,
+      "url": "https://trello.com/c/e2FzZdsq",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Emilia"
+    },
+    {
+      "id": "HU-28",
+      "titulo": "Consultar la lista de inscriptos",
+      "puntos": 3,
+      "url": "https://trello.com/c/5sjyLVrQ",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Emilia"
+    },
+    {
+      "id": "HU-29",
+      "titulo": "Registrar o corregir una asistencia",
+      "puntos": 5,
+      "url": "https://trello.com/c/CFScKedn",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Emilia"
+    },
+    {
+      "id": "HU-30",
+      "titulo": "Consultar el historial propio",
+      "puntos": 3,
+      "url": "https://trello.com/c/ZYiwtTaN",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Emilia"
+    },
+    {
+      "id": "HU-31",
+      "titulo": "Consultar historiales como administrador",
+      "puntos": 3,
+      "url": "https://trello.com/c/lrEJPCR1",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Emilia"
+    },
+    {
+      "id": "HU-32",
+      "titulo": "Consultar el panel administrativo",
+      "puntos": 5,
+      "url": "https://trello.com/c/jkZySU1L",
+      "estado_original": "Backlog/Por Hacer",
+      "responsable": "Emilia"
+    }
+  ]
+}

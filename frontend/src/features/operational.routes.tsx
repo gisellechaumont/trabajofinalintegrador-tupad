@@ -3,9 +3,28 @@ import { RequireRole } from '../app/router/guards';
 import { useSession } from '../app/providers/SessionProvider';
 import { Alert, PageHeader } from '../shared/components/ui';
 import type { NavigationEntry } from '../shared/types/api';
+import { ClassesPage } from './classes/ClassesPage.js';
+import { ClassDetailPage } from './classes/ClassDetailPage.js';
+import { ClassFormPage } from './classes/ClassFormPage.js';
 
 /** Emilia agrega aquí SU navegación y pantallas sin editar AppLayout ni App.tsx. */
-export const operationalNavigation: NavigationEntry[] = [];
+export const operationalNavigation: NavigationEntry[] = [
+  {
+    path: '/admin/clases',
+    label: 'Clases',
+    roles: ['ADMIN'],
+  },
+  {
+    path: '/profesor/clases',
+    label: 'Clases',
+    roles: ['PROFESSOR'],
+  },
+  {
+    path: '/socio/clases',
+    label: 'Clases',
+    roles: ['MEMBER'],
+  },
+];
 
 function PendingOperations() {
   const { user } = useSession();
@@ -15,10 +34,39 @@ function PendingOperations() {
   </>;
 }
 export function OperationalRoutes() {
-  return <Routes>
-    <Route element={<RequireRole roles={['ADMIN']} />}><Route path="/admin/*" element={<PendingOperations />} /></Route>
-    <Route element={<RequireRole roles={['MEMBER']} />}><Route path="/socio/*" element={<PendingOperations />} /></Route>
-    <Route element={<RequireRole roles={['PROFESSOR']} />}><Route path="/profesor/*" element={<PendingOperations />} /></Route>
-    <Route path="*" element={<section className="card"><PageHeader title="No encontramos esa página" description="Revisá la dirección o volvé a tu inicio desde el menú." /></section>} />
-  </Routes>;
+  return (
+    <Routes>
+      <Route element={<RequireRole roles={['ADMIN']} />}>
+        <Route path="/admin/clases" element={<ClassesPage />} />
+        <Route path="/admin/clases/nueva" element={<ClassFormPage />} />
+        <Route path="/admin/clases/:id/editar" element={<ClassFormPage editing />} />
+        <Route path="/admin/clases/:id" element={<ClassDetailPage />} />
+        <Route path="/admin/*" element={<PendingOperations />} />
+      </Route>
+
+      <Route element={<RequireRole roles={['MEMBER']} />}>
+        <Route path="/socio/clases" element={<ClassesPage />} />
+        <Route path="/socio/clases/:id" element={<ClassDetailPage />} />
+        <Route path="/socio/*" element={<PendingOperations />} />
+      </Route>
+
+      <Route element={<RequireRole roles={['PROFESSOR']} />}>
+        <Route path="/profesor/clases" element={<ClassesPage />} />
+        <Route path="/profesor/clases/:id" element={<ClassDetailPage />} />
+        <Route path="/profesor/*" element={<PendingOperations />} />
+      </Route>
+
+      <Route
+        path="*"
+        element={
+          <section className="card">
+            <PageHeader
+              title="No encontramos esa página"
+              description="Revisá la dirección o volvé a tu inicio desde el menú."
+            />
+          </section>
+        }
+      />
+    </Routes>
+  );
 }

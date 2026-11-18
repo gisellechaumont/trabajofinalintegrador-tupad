@@ -225,10 +225,12 @@ Gestionar la programación de clases, la actividad dictada, el profesor asignado
 * Definir la capacidad máxima.
 * Modificar una clase programada.
 * Cancelar una clase.
-* Consultar clases disponibles.
+* Consultar la agenda general desde administración y profesorado; el profesor puede filtrar por cualquier profesor y consultar el detalle básico de cualquier clase.
+* Consultar la oferta de clases programadas, futuras y no canceladas como socio, sin ampliar el alcance enviando un filtro de estado distinto.
 * Mostrar los cupos ocupados y disponibles.
 * Impedir inscripciones en clases canceladas.
 * Devolver los créditos correspondientes cuando el gimnasio cancela una clase.
+* Generar en una única operación un lote semanal finito de clases independientes, con fecha final inclusiva y hasta 84 fechas de calendario.
 
 El cupo disponible será un valor derivado de la capacidad configurada y de la cantidad de inscripciones confirmadas. No se almacenará como un campo independiente.
 
@@ -239,9 +241,10 @@ El cupo disponible será un valor derivado de la capacidad configurada y de la c
 * Consultar una clase.
 * Modificar una clase.
 * Cancelar una clase.
-* Consultar clases asignadas a un profesor.
+* Consultar la agenda general y filtrar por profesor.
 * Consultar clases disponibles para socios.
 * Calcular cupos disponibles.
+* Generar un lote semanal de clases independientes.
 
 #### Dependencias
 
@@ -258,14 +261,21 @@ El cupo disponible será un valor derivado de la capacidad configurada y de la c
 * La fecha de finalización debe ser posterior a la fecha de inicio.
 * La capacidad debe ser mayor que cero.
 * Una clase cancelada no admite nuevas inscripciones.
-* La cantidad de inscripciones confirmadas nunca puede superar el cupo máximo.
-* El profesor puede consultar únicamente las clases que tiene asignadas.
-* El socio puede consultar las clases publicadas y sus cupos disponibles.
+* La cantidad de inscripciones activas nunca puede superar el cupo máximo.
+* ADMIN y PROFESSOR pueden consultar la agenda general; PROFESSOR puede filtrar por cualquier profesor y acceder al detalle básico de cualquier clase.
+* MEMBER recibe únicamente clases SCHEDULED, futuras y no canceladas, incluso si envía otro filtro de estado.
+* La ocupación cuenta inscripciones activas y los cupos disponibles nunca son negativos.
+* Un lote exige al menos un día de semana sin duplicados y una fecha final inclusiva; genera clases independientes de forma atómica, en un rango de hasta 84 fechas calendario y sin cruzar la medianoche local de America/Argentina/Buenos_Aires.
+* Con inscripciones activas, los valores idempotentes de actividad, profesor y fechas se aceptan; solo los cambios reales de esos campos se rechazan. La capacidad puede cambiar mientras no quede por debajo de la ocupación.
 * Si el gimnasio cancela una clase, se devuelven los créditos descontados por las inscripciones confirmadas.
 
 #### Exclusiones
 
-* Horarios recurrentes automáticos.
+* Recurrencia permanente o repetición sin fecha final.
+* Entidad persistente de serie y relación de grupo entre ocurrencias.
+* Edición o cancelación conjunta de ocurrencias.
+* Generación automática futura.
+* Excepciones por feriados.
 * Lista de espera.
 * Asignación de varios profesores a una misma clase.
 * Reserva de espacios o equipamiento.
@@ -548,7 +558,7 @@ El módulo utiliza consultas agregadas sobre:
 | Consultar perfil                   |                     Todos |           Propio |     Propio |
 | Gestionar actividades              |                        Sí |               No |         No |
 | Crear, modificar o cancelar clases |                        Sí |               No |         No |
-| Consultar clases                   |                     Todas |        Asignadas | Publicadas |
+| Consultar clases                   |                     Todas | Agenda general   | SCHEDULED futuras y no canceladas |
 | Gestionar tipos de paquetes        |                        Sí |               No |         No |
 | Asignar paquetes                   |                        Sí |               No |         No |
 | Consultar paquetes                 |                     Todos |               No |    Propios |

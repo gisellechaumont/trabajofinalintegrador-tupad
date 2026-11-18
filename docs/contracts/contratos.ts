@@ -59,6 +59,13 @@ export interface UserCreate { name: string; email: string; password: string; rol
 export interface UserPatch { name?: string; email?: string; active?: boolean }
 export interface ActivityInput { name: string; description?: string | null }
 export interface ClassCreate { activityId: number; professorId: number; startsAt: ISOInstant; endsAt: ISOInstant; capacity: number }
+export interface ClassBatchCreate {
+  activityId: number; professorId: number; startsAt: ISOInstant; endsAt: ISOInstant; capacity: number;
+  /** Días ISO de la semana: 1 lunes, ..., 7 domingo; al menos uno y sin duplicados. */
+  daysOfWeek: Array<1 | 2 | 3 | 4 | 5 | 6 | 7>;
+  /** Fecha local inclusiva (YYYY-MM-DD), con un rango total máximo de 84 días calendario. */
+  repeatUntil: ISODate;
+}
 export type ClassPatch = Partial<ClassCreate>;
 export interface PackageTypeInput { name: string; classCredits: number; durationDays: number }
 export interface PackageAssignment { memberId: number; packageTypeId: number; startsOn: ISODate }

@@ -290,7 +290,12 @@ export async function updateClass(
       if (current.cancelled) throw new AppError(409, 'ALREADY_CANCELLED', 'La clase ya está cancelada.');
       if (current.startsAt <= new Date()) throw new AppError(409, 'CLASS_STARTED', 'No se puede modificar una clase que ya comenzó.');
       const occupied = current._count.enrollments;
-      if (occupied > 0 && Object.keys(input).some((key) => key !== 'capacity')) {
+      const hasRealScheduleChange =
+        (input.activityId !== undefined && input.activityId !== current.activityId)
+        || (input.professorId !== undefined && input.professorId !== current.professorId)
+        || (input.startsAt !== undefined && new Date(input.startsAt).getTime() !== current.startsAt.getTime())
+        || (input.endsAt !== undefined && new Date(input.endsAt).getTime() !== current.endsAt.getTime());
+      if (occupied > 0 && hasRealScheduleChange) {
         throw new AppError(409, 'CLASS_HAS_ENROLLMENTS', 'La clase tiene inscripciones activas. Solo se puede modificar su capacidad.');
       }
       if (input.capacity !== undefined && input.capacity < occupied) {

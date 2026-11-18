@@ -104,7 +104,7 @@ export function listClasses(
   requester: Identity,
 ) {
   if (requester.role === 'MEMBER') {
-    return repository.listClasses({ ...query, status: query.status ?? 'SCHEDULED' });
+    return repository.listClasses({ ...query, status: 'SCHEDULED' });
   }
   return repository.listClasses(query);
 }

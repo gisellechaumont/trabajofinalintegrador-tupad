@@ -163,6 +163,20 @@ test('HU-14/17: listado y detalle por rol, profesor con agenda general y socio s
   await request(app).get('/api/v1/classes').query({ professorId: ids.otherProfessor }).set(auth('professor')).expect(200);
 });
 
+test('MEMBER no puede ampliar la oferta enviando estados distintos de SCHEDULED', async () => {
+  const scheduled = await createClass(4, future(24));
+  const cancelled = await createClass(4, future(48));
+  await prisma.class.update({ where: { id: cancelled.id }, data: { cancelled: true } });
+  const inProgress = await createClass(4, new Date(Date.now() - 30 * 60_000));
+  const finished = await createClass(4, new Date(Date.now() - 2 * 60 * 60_000));
+
+  for (const status of ['CANCELLED', 'IN_PROGRESS', 'FINISHED'] as const) {
+    const response = await request(app).get('/api/v1/classes').query({ status }).set(auth('member')).expect(200);
+    assert.deepEqual(response.body.data.map((row: { id: number }) => row.id), [scheduled.id]);
+    assert.equal(response.body.data.some((row: { id: number }) => [cancelled.id, inProgress.id, finished.id].includes(row.id)), false);
+  }
+});
+
 test('HU-15: edita clase futura y limita cambios/capacidad con inscripciones', async () => {
   const klass = await createClass(3);
   const updatedStartsAt = new Date(klass.endsAt.getTime() - 30 * 60_000).toISOString();
@@ -175,10 +189,25 @@ test('HU-15: edita clase futura y limita cambios/capacidad con inscripciones', a
   await prisma.enrollment.create({ data: { classId: klass.id, memberId: secondMember.id, memberPackageId: secondPack.id } });
   assert.equal(await prisma.enrollment.count({ where: { classId: klass.id, cancelled: false } }), 2);
   const alternativeActivity = await prisma.activity.create({ data: { name: 'Pilates' } });
+
+  const current = await prisma.class.findUniqueOrThrow({ where: { id: klass.id } });
+  await request(app).patch(`/api/v1/classes/${klass.id}`).set(auth()).send({
+    activityId: current.activityId,
+    professorId: current.professorId,
+    startsAt: current.startsAt.toISOString().replace('Z', '+00:00'),
+    endsAt: current.endsAt.toISOString().replace('Z', '+00:00'),
+  }).expect(200);
+  await request(app).patch(`/api/v1/classes/${klass.id}`).set(auth()).send({ professorId: ids.otherProfessor })
+    .expect(409).expect(({ body }) => assert.equal(body.error.code, 'CLASS_HAS_ENROLLMENTS'));
+  await request(app).patch(`/api/v1/classes/${klass.id}`).set(auth()).send({ startsAt: new Date(current.startsAt.getTime() + 5 * 60_000).toISOString() })
+    .expect(409).expect(({ body }) => assert.equal(body.error.code, 'CLASS_HAS_ENROLLMENTS'));
+  await request(app).patch(`/api/v1/classes/${klass.id}`).set(auth()).send({ endsAt: new Date(current.endsAt.getTime() + 5 * 60_000).toISOString() })
+    .expect(409).expect(({ body }) => assert.equal(body.error.code, 'CLASS_HAS_ENROLLMENTS'));
   await request(app).patch(`/api/v1/classes/${klass.id}`).set(auth()).send({ capacity: 1 }).expect(409).expect(({ body }) => assert.equal(body.error.code, 'CAPACITY_BELOW_ENROLLMENTS'));
   await request(app).patch(`/api/v1/classes/${klass.id}`).set(auth()).send({ activityId: alternativeActivity.id }).expect(409).expect(({ body }) => assert.equal(body.error.code, 'CLASS_HAS_ENROLLMENTS'));
+  await request(app).patch(`/api/v1/classes/${klass.id}`).set(auth()).send({ capacity: 2 }).expect(200);
+  await request(app).patch(`/api/v1/classes/${klass.id}`).set(auth()).send({ capacity: 7 }).expect(200);
   await request(app).patch(`/api/v1/classes/${klass.id}`).set(auth('member')).send({ capacity: 7 }).expect(403);
-  await request(app).patch(`/api/v1/classes/${klass.id}`).set(auth()).send({ capacity: 1 }).expect(409);
 });
 
 test('HU-16: cancelar conserva clase, cancela reservas, reintegra exactamente y rechaza repetición/roles ajenos', async () => {

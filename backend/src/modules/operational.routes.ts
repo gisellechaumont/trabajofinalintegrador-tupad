@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   classesRouter,
 } from './classes/classes.routes.js';
+import { packageTypesRouter } from './package-types/package-types.routes.js';
 
 /**
  * Punto de entrada de Emilia: clases, paquetes,
@@ -15,4 +16,9 @@ export const operationalRouter = Router();
 operationalRouter.use(
   '/classes',
   classesRouter,
+);
+
+operationalRouter.use(
+  '/package-types',
+  packageTypesRouter,
 );

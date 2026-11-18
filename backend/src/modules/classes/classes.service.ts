@@ -3,9 +3,11 @@ import type { Identity } from '../../shared/types.js';
 import * as repository from './classes.repository.js';
 import type {
   ClassesQuery,
+  CreateClassesBatchInput,
   CreateClassInput,
   PatchClassInput,
 } from './classes.validation.js';
+import { generateWeeklyClassOccurrences } from './classes.schedule.js';
 
 async function validateActivity(
   activityId: number,
@@ -138,6 +140,26 @@ export async function createClass(
   ]);
 
   return repository.insertClass(input);
+}
+
+export async function createClassesBatch(
+  input: CreateClassesBatchInput,
+) {
+  validateSchedule(input.startsAt, input.endsAt);
+  const occurrences = generateWeeklyClassOccurrences(input);
+
+  await Promise.all([
+    validateActivity(input.activityId),
+    validateProfessor(input.professorId),
+  ]);
+
+  return repository.insertClassesBatch(occurrences.map(({ startsAt, endsAt }) => ({
+    activityId: input.activityId,
+    professorId: input.professorId,
+    startsAt: startsAt.toISOString(),
+    endsAt: endsAt.toISOString(),
+    capacity: input.capacity,
+  })));
 }
 
 export async function patchClass(

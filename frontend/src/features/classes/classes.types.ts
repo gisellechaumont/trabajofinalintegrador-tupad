@@ -32,6 +32,11 @@ export interface ClassCreateInput {
   capacity: number;
 }
 
+export interface ClassBatchCreateInput extends ClassCreateInput {
+  daysOfWeek: number[];
+  repeatUntil: string;
+}
+
 export type ClassPatchInput =
   Partial<ClassCreateInput>;
 

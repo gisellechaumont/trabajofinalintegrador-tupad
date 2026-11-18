@@ -45,6 +45,108 @@ test('HU-13: ADMIN crea clase; otros roles reciben 403 y referencias inválidas 
   await request(app).post('/api/v1/classes').set(auth()).send({ ...body, professorId: ids.member }).expect(409);
 });
 
+test('POST /classes/batch genera clases independientes y solo permite ADMIN', async () => {
+  const body = {
+    activityId,
+    professorId: ids.professor,
+    startsAt: '2030-02-04T15:00:00.000Z',
+    endsAt: '2030-02-04T16:00:00.000Z',
+    capacity: 10,
+    daysOfWeek: [1],
+    repeatUntil: '2030-02-18',
+  };
+
+  await request(app).post('/api/v1/classes/batch').set(auth('member')).send(body).expect(403);
+  await request(app).post('/api/v1/classes/batch').set(auth('professor')).send(body).expect(403);
+  await request(app).post('/api/v1/classes/batch').set(auth()).send({ ...body, activityId: 2147483647 }).expect(404);
+  await request(app).post('/api/v1/classes/batch').set(auth()).send({ ...body, professorId: ids.member }).expect(409);
+  const inactiveActivity = await prisma.activity.create({ data: { name: 'Actividad inactiva', active: false } });
+  await request(app).post('/api/v1/classes/batch').set(auth()).send({ ...body, activityId: inactiveActivity.id }).expect(409);
+  const inactiveProfessor = await prisma.user.create({ data: { name: 'Profesor inactivo', email: 'inactive-batch@classes.test', role: 'PROFESSOR', active: false, passwordHash: 'hash' } });
+  await request(app).post('/api/v1/classes/batch').set(auth()).send({ ...body, professorId: inactiveProfessor.id }).expect(409);
+
+  const response = await request(app).post('/api/v1/classes/batch').set(auth()).send(body).expect(201);
+  assert.equal(response.body.data.length, 3);
+  assert.deepEqual(response.body.data.map((row: { startsAt: string }) => row.startsAt), [
+    '2030-02-04T15:00:00.000Z',
+    '2030-02-11T15:00:00.000Z',
+    '2030-02-18T15:00:00.000Z',
+  ]);
+  assert.deepEqual(response.body.data.map((row: { endsAt: string }) => row.endsAt), [
+    '2030-02-04T16:00:00.000Z',
+    '2030-02-11T16:00:00.000Z',
+    '2030-02-18T16:00:00.000Z',
+  ]);
+  assert.equal(new Set(response.body.data.map((row: { id: number }) => row.id)).size, 3);
+  assert.equal(await prisma.class.count(), 3);
+});
+
+test('POST /classes/batch rechaza rangos, días y horarios inválidos', async () => {
+  const body = {
+    activityId,
+    professorId: ids.professor,
+    startsAt: '2030-02-04T15:00:00.000Z',
+    endsAt: '2030-02-04T16:00:00.000Z',
+    capacity: 10,
+    daysOfWeek: [1],
+    repeatUntil: '2030-02-18',
+  };
+  const invalidInputs = [
+    { ...body, daysOfWeek: [] },
+    { ...body, daysOfWeek: [1, 1] },
+    { ...body, daysOfWeek: [8] },
+    { ...body, capacity: 0 },
+    { ...body, endsAt: '2030-02-04T14:00:00.000Z' },
+    { ...body, repeatUntil: '2030-02-03' },
+    { ...body, repeatUntil: '2030-04-30' },
+    { ...body, repeatUntil: 'invalid-date' },
+    { ...body, startsAt: '2030-02-05T02:30:00.000Z', endsAt: '2030-02-05T04:00:00.000Z' },
+  ];
+
+  for (const invalid of invalidInputs) {
+    await request(app).post('/api/v1/classes/batch').set(auth()).send(invalid).expect(422);
+  }
+  await request(app).post('/api/v1/classes/batch').set(auth())
+    .send({ ...body, daysOfWeek: [3], repeatUntil: '2030-02-05' })
+    .expect(422)
+    .expect(({ body: result }) => assert.equal(result.error.code, 'NO_CLASS_OCCURRENCES'));
+  assert.equal(await prisma.class.count(), 0);
+});
+
+test('POST /classes/batch acepta el máximo de 84 fechas inclusivas', async () => {
+  const response = await request(app).post('/api/v1/classes/batch').set(auth()).send({
+    activityId,
+    professorId: ids.professor,
+    startsAt: '2030-02-04T15:00:00.000Z',
+    endsAt: '2030-02-04T16:00:00.000Z',
+    capacity: 10,
+    daysOfWeek: [1],
+    repeatUntil: '2030-04-28',
+  }).expect(201);
+  assert.equal(response.body.data.length, 12);
+  assert.equal(await prisma.class.count(), 12);
+});
+
+test('POST /classes/batch revierte todas las inserciones si una ocurrencia entra en conflicto', async () => {
+  const conflictingStart = new Date('2030-02-11T15:00:00.000Z');
+  const existing = await createClass(5, conflictingStart);
+  const body = {
+    activityId,
+    professorId: ids.professor,
+    startsAt: '2030-02-04T15:00:00.000Z',
+    endsAt: '2030-02-04T16:00:00.000Z',
+    capacity: 10,
+    daysOfWeek: [1],
+    repeatUntil: '2030-02-18',
+  };
+
+  await request(app).post('/api/v1/classes/batch').set(auth()).send(body)
+    .expect(409)
+    .expect(({ body: result }) => assert.equal(result.error.code, 'CLASS_SCHEDULE_CONFLICT'));
+  const rows = await prisma.class.findMany({ orderBy: { startsAt: 'asc' } });
+  assert.deepEqual(rows.map(({ id }) => id), [existing.id]);
+});
+
 test('HU-14/17: listado y detalle por rol, profesor con agenda general y socio solo oferta activa', async () => {
   const scheduled = await createClass(4);
   const cancelled = await createClass(3, future(48));

@@ -245,6 +245,37 @@ export async function insertClass(
   }
 }
 
+export async function insertClassesBatch(
+  inputs: CreateClassInput[],
+) {
+  try {
+    const rows = await serializable(async (transaction) => {
+      const created: ClassRow[] = [];
+      for (const input of inputs) {
+        created.push(await transaction.class.create({
+          data: {
+            activityId: input.activityId,
+            professorId: input.professorId,
+            startsAt: new Date(input.startsAt),
+            endsAt: new Date(input.endsAt),
+            capacity: input.capacity,
+          },
+          include: classInclude,
+        }));
+      }
+      return created;
+    });
+
+    return rows.map((row) => classView(row));
+  } catch (error) {
+    return rethrowUnique(
+      error,
+      'CLASS_SCHEDULE_CONFLICT',
+      'Una de las clases ya existe para esa actividad, profesor y horario de inicio. No se creó ninguna clase del lote.',
+    );
+  }
+}
+
 export async function updateClass(
   id: number,
   input: PatchClassInput,

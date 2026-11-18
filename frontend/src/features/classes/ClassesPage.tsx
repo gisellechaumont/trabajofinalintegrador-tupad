@@ -34,8 +34,10 @@ import {
     fetchClassActivityOptions,
     fetchClassProfessorCatalog,
     fetchClassProfessorOptions,
+    fetchAllClasses,
 } from './classes.api';
-import { buenosAiresDayBoundaryToIso, formatBuenosAires } from './classes.dates';
+import { buenosAiresDayBoundaryToIso, buenosAiresWeekRange, buenosAiresWeekStartKey, formatBuenosAires } from './classes.dates';
+import { ClassesCalendar } from './ClassesCalendar';
 import type {
     ClassStatus,
     ClassOption,
@@ -93,6 +95,12 @@ export function ClassesPage() {
     const { api, user } = useSession();
 
     const [page, setPage] = useState(1);
+    const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+    const [calendarWeekStart, setCalendarWeekStart] = useState(() => buenosAiresWeekStartKey());
+    const [calendarClasses, setCalendarClasses] = useState<ClassView[]>([]);
+    const [calendarLoading, setCalendarLoading] = useState(false);
+    const [calendarError, setCalendarError] = useState('');
+    const [calendarRevision, setCalendarRevision] = useState(0);
 
     const [status, setStatus] =
         useState<ClassStatus | ''>('');
@@ -161,6 +169,25 @@ export function ClassesPage() {
             `/classes?${query}`,
             true,
         );
+
+    const calendarRange = buenosAiresWeekRange(calendarWeekStart);
+    useEffect(() => {
+        if (viewMode !== 'calendar' || !user) return;
+        let active = true;
+        setCalendarLoading(true);
+        setCalendarError('');
+        setCalendarClasses([]);
+        fetchAllClasses(api, {
+            from: calendarRange.from,
+            to: calendarRange.to,
+            ...(user.role === 'MEMBER' ? { status: 'SCHEDULED' as const } : status ? { status } : {}),
+            ...(activityId ? { activityId: Number(activityId) } : {}),
+            ...(onlyMine && user.role === 'PROFESSOR' ? { professorId: user.id } : professorId ? { professorId: Number(professorId) } : {}),
+        }).then((classes) => { if (active) setCalendarClasses(classes); })
+            .catch((failure: unknown) => { if (active) setCalendarError(errorMessage(failure)); })
+            .finally(() => { if (active) setCalendarLoading(false); });
+        return () => { active = false; };
+    }, [api, viewMode, calendarWeekStart, calendarRange.from, calendarRange.to, user?.role, user?.id, status, activityId, professorId, onlyMine, calendarRevision]);
 
     useEffect(() => {
         if (!result.data) return;
@@ -266,6 +293,11 @@ export function ClassesPage() {
                 }
             />
 
+            <div className="class-view-switch" role="group" aria-label="Vista de clases">
+                <Button type="button" variant={viewMode === 'list' ? 'primary' : 'secondary'} aria-pressed={viewMode === 'list'} onClick={() => setViewMode('list')}>Ver listado</Button>
+                <Button type="button" variant={viewMode === 'calendar' ? 'primary' : 'secondary'} aria-pressed={viewMode === 'calendar'} onClick={() => setViewMode('calendar')}>Ver calendario semanal</Button>
+            </div>
+
             {notice && (
                 <Alert tone="success">
                     {notice}
@@ -289,6 +321,7 @@ export function ClassesPage() {
                         {professors.map((professor) => <option key={professor.id} value={professor.id}>{professor.name}</option>)}
                     </Select>
                     {user.role === 'PROFESSOR' && <div className="field"><span>Mis clases</span><label><input type="checkbox" style={{ width: 'auto', minHeight: 'auto', padding: 0 }} checked={onlyMine} onChange={(event) => { setOnlyMine(event.target.checked); setProfessorId(''); setPage(1); }} /> Solo mis clases</label></div>}
+                    {viewMode === 'list' && <>
                     <Field
                         label="Desde"
                         type="date"
@@ -314,6 +347,7 @@ export function ClassesPage() {
                             setPage(1);
                         }}
                     />
+                    </>}
 
                     {user.role !== 'MEMBER' && <Select
                         label="Estado"
@@ -346,7 +380,7 @@ export function ClassesPage() {
 
                 {optionsError && <Alert>Algunos filtros no pudieron cargarse: {optionsError}</Alert>}
 
-                {result.loading && (
+                {viewMode === 'list' && result.loading && (
                     <LoadingState
                         label={
                             result.data
@@ -356,14 +390,14 @@ export function ClassesPage() {
                     />
                 )}
 
-                {result.error && (
+                {viewMode === 'list' && result.error && (
                     <ErrorState
                         message={result.error}
                         retry={result.refresh}
                     />
                 )}
 
-                {result.data &&
+                {viewMode === 'list' && result.data &&
                     !result.error &&
                     (
                         result.data.data.length
@@ -530,7 +564,7 @@ export function ClassesPage() {
                             )
                     )}
 
-                {result.data && (
+                {viewMode === 'list' && result.data && (
                     <Pagination
                         page={page}
                         pageSize={10}
@@ -541,6 +575,18 @@ export function ClassesPage() {
                     />
                 )}
             </section>
+
+            {viewMode === 'calendar' && <ClassesCalendar
+                weekStart={calendarWeekStart}
+                classes={calendarClasses}
+                loading={calendarLoading}
+                error={calendarError}
+                role={user.role}
+                professorId={user.id}
+                detailBasePath={basePath}
+                onWeekStartChange={setCalendarWeekStart}
+                onRetry={() => setCalendarRevision((value) => value + 1)}
+            />}
 
             <ConfirmDialog
                 open={Boolean(pending)}

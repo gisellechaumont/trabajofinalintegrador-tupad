@@ -48,6 +48,30 @@ export const createClassSchema = z.object(classFields)
   .strict()
   .superRefine(validateTimeRange);
 
+const daysOfWeekSchema = z.array(z.number().int().min(1).max(7))
+  .min(1, 'Seleccioná al menos un día de la semana.')
+  .max(7)
+  .superRefine((days, context) => {
+    if (new Set(days).size !== days.length) {
+      context.addIssue({
+        code: 'custom',
+        message: 'No repitas días de la semana.',
+      });
+    }
+  });
+
+export const createClassesBatchSchema = z.object({
+  activityId: classFields.activityId,
+  professorId: classFields.professorId,
+  startsAt: classFields.startsAt,
+  endsAt: classFields.endsAt,
+  capacity: classFields.capacity,
+  daysOfWeek: daysOfWeekSchema,
+  repeatUntil: z.iso.date({ error: 'Ingresá una fecha final válida con formato AAAA-MM-DD.' }),
+})
+  .strict()
+  .superRefine(validateTimeRange);
+
 export const patchClassSchema = z.object({
   activityId: classFields.activityId.optional(),
   professorId: classFields.professorId.optional(),
@@ -93,6 +117,10 @@ export const classesQuerySchema = paginationSchema.extend({
 
 export type CreateClassInput = z.infer<
   typeof createClassSchema
+>;
+
+export type CreateClassesBatchInput = z.infer<
+  typeof createClassesBatchSchema
 >;
 
 export type PatchClassInput = z.infer<

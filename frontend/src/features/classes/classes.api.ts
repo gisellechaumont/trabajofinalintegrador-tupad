@@ -5,6 +5,7 @@ import type {
 } from '../../shared/types/api';
 import type {
   ClassCancellation,
+  ClassBatchCreateInput,
   ClassCreateInput,
   ClassesQuery,
   ClassPatchInput,
@@ -117,6 +118,21 @@ export function fetchClasses(
   );
 }
 
+export async function fetchAllClasses(
+  api: HttpClient,
+  query: Omit<ClassesQuery, 'page' | 'pageSize'> = {},
+) {
+  const pageSize = 100;
+  const first = await fetchClasses(api, { ...query, page: 1, pageSize });
+  const pageCount = Math.ceil(first.meta.total / first.meta.pageSize);
+  const remaining = await Promise.all(Array.from({ length: Math.max(0, pageCount - 1) }, (_, index) =>
+    fetchClasses(api, { ...query, page: index + 2, pageSize }),
+  ));
+  const unique = new Map<number, ClassView>();
+  for (const gymClass of [...first.data, ...remaining.flatMap((page) => page.data)]) unique.set(gymClass.id, gymClass);
+  return [...unique.values()];
+}
+
 export function fetchClass(
   api: HttpClient,
   id: number | string,
@@ -132,6 +148,19 @@ export function createClass(
 ) {
   return api.request<ApiData<ClassView>>(
     '/classes',
+    {
+      method: 'POST',
+      body: input,
+    },
+  );
+}
+
+export function createClassesBatch(
+  api: HttpClient,
+  input: ClassBatchCreateInput,
+) {
+  return api.request<ApiData<ClassView[]>>(
+    '/classes/batch',
     {
       method: 'POST',
       body: input,

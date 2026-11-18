@@ -11,12 +11,14 @@ import {
 import {
   cancelClass,
   createClass,
+  createClassesBatch,
   getClass,
   listClasses,
   patchClass,
 } from './classes.service.js';
 import {
   classesQuerySchema,
+  createClassesBatchSchema,
   createClassSchema,
   patchClassSchema,
 } from './classes.validation.js';
@@ -45,6 +47,20 @@ classesRouter.post(
     res.status(201).json({
       data: await createClass(
         parse(createClassSchema, req.body),
+      ),
+    });
+  },
+);
+
+classesRouter.post(
+  '/batch',
+  allowRoles('ADMIN'),
+  async (req, res) => {
+    parse(emptyQuery, req.query, 400);
+
+    res.status(201).json({
+      data: await createClassesBatch(
+        parse(createClassesBatchSchema, req.body),
       ),
     });
   },

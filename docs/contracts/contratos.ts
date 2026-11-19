@@ -68,7 +68,10 @@ export interface ClassBatchCreate {
 }
 export type ClassPatch = Partial<ClassCreate>;
 export interface PackageTypeInput { name: string; classCredits: number; durationDays: number }
+export type PackageTypePatch = Partial<PackageTypeInput> & { active?: boolean };
+export interface PackageTypesQuery { page?: number; pageSize?: number; search?: string; active?: boolean }
 export interface PackageAssignment { memberId: number; packageTypeId: number; startsOn: ISODate }
+export interface MemberPackagesQuery { page?: number; pageSize?: number; memberId?: number; status?: PackageStatus; expiringSoon?: boolean }
 export interface EnrollmentInput { classId: number; memberId?: number } // memberId: ADMIN o id propio.
 
 /** Solo interfaz lógica. La implementación se prepara en la base compartida. */
@@ -86,9 +89,9 @@ export interface SessionContext {
 /** Entrada serializable de navegación; los componentes de React van en su grupo. */
 export interface NavigationEntry { path: string; label: string; roles: Role[] }
 
-// Puntos de montaje acordados (a implementar, NO existen por incluir este archivo):
+// Puntos de montaje implementados para clases y paquetes; los módulos pendientes se integran aquí:
 // backend/src/modules/operational.routes.ts exporta operationalRouter (Express.Router).
 // app.ts lo monta UNA vez bajo /api/v1; cada ruta aplica requireAuth y allowRoles.
 // frontend/src/features/operational.routes.tsx exporta OperationalRoutes (componente)
 // y operationalNavigation: NavigationEntry[]. Sus pantallas consumen SessionContext.
-// Cada integración concreta se fija en el commit base y respeta estos contratos.
+// Inscripciones, asistencias, historiales y panel se integrarán en estos puntos respetando estos contratos.

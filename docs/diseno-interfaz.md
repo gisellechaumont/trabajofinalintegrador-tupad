@@ -387,7 +387,8 @@ Cada estado vacío incluirá:
 | --- | --- | --- |
 | Calendario | No hay clases programadas para el período seleccionado. | Cambiar fecha o quitar filtros |
 | Mis inscripciones | No tenés próximas inscripciones. | Explorar clases |
-| Mis paquetes | No tenés paquetes activos. | Contactar con administración |
+| Mis paquetes (sin filtros) | Todavía no tenés paquetes asignados. | Contactar con administración |
+| Mis paquetes (con filtros) | No hay paquetes que coincidan con los filtros seleccionados. | Quitar o cambiar filtros |
 | Historial | Todavía no hay actividad para mostrar. | Volver al inicio |
 | Gestión de usuarios | Todavía no hay usuarios registrados. | Crear usuario |
 | Resultado de búsqueda | No se encontraron usuarios con los filtros seleccionados. | Quitar filtros |

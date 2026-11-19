@@ -195,36 +195,6 @@
               }
             }
           },
-          "404": {
-            "description": "Recurso inexistente",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflicto de negocio o estado",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Campos inválidos",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
           "500": {
             "description": "Error interno sin detalles",
             "content": {
@@ -578,7 +548,7 @@
             "name": "page",
             "in": "query",
             "required": false,
-            "description": "",
+            "description": "Página solicitada; predeterminado 1.",
             "schema": {
               "type": "integer",
               "minimum": 1,
@@ -589,7 +559,7 @@
             "name": "pageSize",
             "in": "query",
             "required": false,
-            "description": "",
+            "description": "Tamaño de página; predeterminado 20 y máximo 100.",
             "schema": {
               "type": "integer",
               "minimum": 1,
@@ -601,7 +571,7 @@
             "name": "search",
             "in": "query",
             "required": false,
-            "description": "Búsqueda por nombre; usuarios también por correo. No altera permisos.",
+            "description": "Búsqueda de nombre insensible a mayúsculas/minúsculas.",
             "schema": {
               "type": "string",
               "maxLength": 120
@@ -611,7 +581,7 @@
             "name": "role",
             "in": "query",
             "required": false,
-            "description": "",
+            "description": "Filtra por estado activo o inactivo.",
             "schema": {
               "type": "string",
               "enum": [
@@ -1535,7 +1505,7 @@
           "PROFESSOR",
           "MEMBER"
         ],
-        "description": "Orden startsAt,id. ADMIN todas; PROFESSOR solo asignadas (RN-04); MEMBER ve programación sin datos de inscriptos. from inclusivo/to exclusivo. Filtro de otro profesor con PROFESSOR: 403.",
+        "description": "ADMIN y PROFESSOR consultan la agenda general; PROFESSOR puede filtrar por cualquier professorId. MEMBER recibe siempre clases SCHEDULED, futuras y no canceladas, aunque envíe otro status. Filtros: from inclusivo, to exclusivo, activityId, professorId y status; page/pageSize con orden startsAt,id. occupiedSpots cuenta inscripciones activas; availableSpots = max(0, capacity - occupiedSpots).",
         "responses": {
           "200": {
             "description": "Operación completada",
@@ -1639,6 +1609,9 @@
           "HU-17",
           "HU-27"
         ],
+        "x-error-codes": [
+          "VALIDATION_ERROR"
+        ],
         "parameters": [
           {
             "name": "page",
@@ -1707,7 +1680,7 @@
             "name": "status",
             "in": "query",
             "required": false,
-            "description": "",
+            "description": "ADMIN y PROFESSOR: aplica el estado solicitado. MEMBER: el backend impone SCHEDULED y no permite ampliar la oferta con otro valor.",
             "schema": {
               "$ref": "#/components/schemas/ClassStatus"
             }
@@ -1724,7 +1697,7 @@
         "x-roles": [
           "ADMIN"
         ],
-        "description": "Actividad/profesor activos, rol PROFESSOR, startsAt futuro, endsAt posterior, capacidad positiva. No agrega recurrencia ni control de salas.",
+        "description": "Crea una sola clase (sin lote), exclusivamente para ADMIN. Conserva el contrato vigente: activityId, professorId, startsAt, endsAt y capacity; responde 201 con { data: ClassView }. Requiere actividad activa, profesor activo con rol PROFESSOR, inicio futuro, final posterior y capacidad positiva.",
         "responses": {
           "201": {
             "description": "Operación completada",
@@ -1786,7 +1759,7 @@
             }
           },
           "409": {
-            "description": "Conflicto de negocio o estado",
+            "description": "CLASS_SCHEDULE_CONFLICT, INVALID_PROFESSOR o INACTIVE_ACTIVITY.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1819,12 +1792,158 @@
         "x-trello-ids": [
           "HU-13"
         ],
+        "x-error-codes": [
+          "ACTIVITY_NOT_FOUND",
+          "PROFESSOR_NOT_FOUND",
+          "INVALID_PROFESSOR",
+          "INACTIVE_USER",
+          "INACTIVE_ACTIVITY",
+          "CLASS_SCHEDULE_CONFLICT",
+          "CLASS_MUST_BE_FUTURE",
+          "INVALID_CLASS_TIME",
+          "VALIDATION_ERROR"
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ClassCreate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/classes/batch": {
+      "post": {
+        "operationId": "post_classes_batch",
+        "summary": "Programar clases en lote semanal",
+        "tags": [
+          "Emilia"
+        ],
+        "x-owner": "Emilia",
+        "x-roles": [
+          "ADMIN"
+        ],
+        "description": "Crea clases independientes de manera atómica. repeatUntil es una fecha local inclusiva YYYY-MM-DD; el intervalo total, incluida la fecha inicial, puede abarcar como máximo 84 fechas calendario. Cada ocurrencia comienza y termina el mismo día en America/Argentina/Buenos_Aires. Una colisión por (activityId, professorId, startsAt) devuelve CLASS_SCHEDULE_CONFLICT y no deja clases parcialmente creadas.",
+        "responses": {
+          "201": {
+            "description": "Lote creado; data contiene una ClassView por cada ocurrencia independiente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Class"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "JSON o consulta inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credenciales o sesión inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Operación fuera de permisos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Actividad o profesor inexistente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CLASS_SCHEDULE_CONFLICT u otro conflicto de negocio. La transacción se revierte y no crea ocurrencias parciales.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR, INVALID_RECURRENCE_RANGE, NO_CLASS_OCCURRENCES, CLASS_MUST_BE_FUTURE o INVALID_CLASS_TIME.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error interno sin detalles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-trello-ids": [
+          "HU-13"
+        ],
+        "x-error-codes": [
+          "ACTIVITY_NOT_FOUND",
+          "PROFESSOR_NOT_FOUND",
+          "INVALID_PROFESSOR",
+          "INACTIVE_USER",
+          "INACTIVE_ACTIVITY",
+          "CLASS_SCHEDULE_CONFLICT",
+          "CLASS_MUST_BE_FUTURE",
+          "INVALID_CLASS_TIME",
+          "INVALID_RECURRENCE_RANGE",
+          "NO_CLASS_OCCURRENCES",
+          "CONCURRENT_MODIFICATION",
+          "VALIDATION_ERROR"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClassBatchCreate"
               }
             }
           }
@@ -1844,7 +1963,7 @@
           "PROFESSOR",
           "MEMBER"
         ],
-        "description": "PROFESSOR solo asignada. No incluye roster ni información privada de socios.",
+        "description": "Disponible para cualquier rol autenticado. Devuelve el detalle básico y no incluye lista de inscriptos ni datos privados de socios.",
         "responses": {
           "200": {
             "description": "Operación completada",
@@ -1941,6 +2060,10 @@
           "HU-17",
           "HU-27"
         ],
+        "x-error-codes": [
+          "NOT_FOUND",
+          "VALIDATION_ERROR"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -1963,7 +2086,7 @@
         "x-roles": [
           "ADMIN"
         ],
-        "description": "Solo futura no cancelada. Capacidad >= ocupación. Política técnica v1: con inscripciones activas solo cambia capacidad; otros cambios CLASS_HAS_ENROLLMENTS. Confirmar política al revisar HU-15.",
+        "description": "Exclusivo de ADMIN; solo admite clases futuras y no canceladas. Sin inscripciones activas se pueden modificar los campos opcionales enviados. Con inscripciones activas se aceptan valores idempotentes de activityId, professorId, startsAt y endsAt; las fechas se comparan como instantes. Se permite modificar capacity si queda igual o por encima de la ocupación. Los cambios reales de actividad, profesor o fechas devuelven CLASS_HAS_ENROLLMENTS.",
         "responses": {
           "200": {
             "description": "Operación completada",
@@ -2025,7 +2148,7 @@
             }
           },
           "409": {
-            "description": "Conflicto de negocio o estado",
+            "description": "CLASS_HAS_ENROLLMENTS, CAPACITY_BELOW_ENROLLMENTS, CLASS_STARTED, ALREADY_CANCELLED, CLASS_SCHEDULE_CONFLICT o CONCURRENT_MODIFICATION.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2057,6 +2180,23 @@
         },
         "x-trello-ids": [
           "HU-15"
+        ],
+        "x-error-codes": [
+          "CLASS_HAS_ENROLLMENTS",
+          "CAPACITY_BELOW_ENROLLMENTS",
+          "CONCURRENT_MODIFICATION",
+          "CLASS_STARTED",
+          "ALREADY_CANCELLED",
+          "NOT_FOUND",
+          "ACTIVITY_NOT_FOUND",
+          "PROFESSOR_NOT_FOUND",
+          "INVALID_PROFESSOR",
+          "INACTIVE_USER",
+          "INACTIVE_ACTIVITY",
+          "CLASS_MUST_BE_FUTURE",
+          "INVALID_CLASS_TIME",
+          "CLASS_SCHEDULE_CONFLICT",
+          "VALIDATION_ERROR"
         ],
         "parameters": [
           {
@@ -2092,7 +2232,7 @@
         "x-roles": [
           "ADMIN"
         ],
-        "description": "Transacción atómica sobre clase, reservas activas y paquetes originales. No aplica límite de 2h de cancelación individual. Repetición: 409 ALREADY_CANCELLED, sin doble devolución. Conserva asistencia histórica y la excluye del porcentaje.",
+        "description": "Exclusivo de ADMIN. Solo cancela clases que no comenzaron. Conserva el registro y atómicamente cancela inscripciones activas y reintegra los créditos a sus paquetes originales. El reintegro no se duplica; repetir la solicitud devuelve 409 ALREADY_CANCELLED. Si persiste un conflicto serializable tras los reintentos, devuelve 409 CONCURRENT_MODIFICATION.",
         "responses": {
           "200": {
             "description": "Operación completada",
@@ -2154,7 +2294,7 @@
             }
           },
           "409": {
-            "description": "Conflicto de negocio o estado",
+            "description": "ALREADY_CANCELLED, CLASS_STARTED o CONCURRENT_MODIFICATION.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2186,6 +2326,13 @@
         },
         "x-trello-ids": [
           "HU-16"
+        ],
+        "x-error-codes": [
+          "ALREADY_CANCELLED",
+          "CLASS_STARTED",
+          "CONCURRENT_MODIFICATION",
+          "NOT_FOUND",
+          "VALIDATION_ERROR"
         ],
         "parameters": [
           {
@@ -2624,7 +2771,7 @@
         "x-roles": [
           "ADMIN"
         ],
-        "description": "",
+        "description": "Solo ADMIN. Busca por nombre sin distinguir mayúsculas/minúsculas; admite filtro active y paginación page (predeterminado 1) y pageSize (predeterminado 20, máximo 100). Orden estable por id ascendente. Consulta inválida: 400 INVALID_REQUEST; autenticación: 401 INVALID_SESSION; autorización: 403 FORBIDDEN.",
         "responses": {
           "200": {
             "description": "Operación completada",
@@ -2682,36 +2829,6 @@
               }
             }
           },
-          "404": {
-            "description": "Recurso inexistente",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflicto de negocio o estado",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Campos inválidos",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
           "500": {
             "description": "Error interno sin detalles",
             "content": {
@@ -2731,7 +2848,7 @@
             "name": "page",
             "in": "query",
             "required": false,
-            "description": "",
+            "description": "Página solicitada; predeterminado 1.",
             "schema": {
               "type": "integer",
               "minimum": 1,
@@ -2742,7 +2859,7 @@
             "name": "pageSize",
             "in": "query",
             "required": false,
-            "description": "",
+            "description": "Tamaño de página; predeterminado 20 y máximo 100.",
             "schema": {
               "type": "integer",
               "minimum": 1,
@@ -2754,7 +2871,7 @@
             "name": "search",
             "in": "query",
             "required": false,
-            "description": "Búsqueda por nombre; usuarios también por correo. No altera permisos.",
+            "description": "Busca tipos de paquete por nombre, sin distinguir mayúsculas de minúsculas.",
             "schema": {
               "type": "string",
               "maxLength": 120
@@ -2764,7 +2881,7 @@
             "name": "active",
             "in": "query",
             "required": false,
-            "description": "",
+            "description": "Filtra por estado activo o inactivo.",
             "schema": {
               "type": "boolean"
             }
@@ -2781,7 +2898,7 @@
         "x-roles": [
           "ADMIN"
         ],
-        "description": "",
+        "description": "Solo ADMIN. El body es estricto y no admite active; el servidor recorta name y crea el tipo activo. name es único por lower(btrim(name)); colisión: PACKAGE_TYPE_NAME_CONFLICT. Errores generales: INVALID_REQUEST, INVALID_SESSION, FORBIDDEN y VALIDATION_ERROR. No existe eliminación física.",
         "responses": {
           "201": {
             "description": "Operación completada",
@@ -2832,16 +2949,6 @@
               }
             }
           },
-          "404": {
-            "description": "Recurso inexistente",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
           "409": {
             "description": "Conflicto de negocio o estado",
             "content": {
@@ -2854,6 +2961,16 @@
           },
           "422": {
             "description": "Campos inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "REQUEST_TOO_LARGE: el body JSON supera el límite permitido.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2899,7 +3016,7 @@
         "x-roles": [
           "ADMIN"
         ],
-        "description": "",
+        "description": "Solo ADMIN. ID inexistente: 404 PACKAGE_TYPE_NOT_FOUND.",
         "responses": {
           "200": {
             "description": "Operación completada",
@@ -2952,26 +3069,6 @@
           },
           "404": {
             "description": "Recurso inexistente",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflicto de negocio o estado",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Campos inválidos",
             "content": {
               "application/json": {
                 "schema": {
@@ -3016,7 +3113,7 @@
         "x-roles": [
           "ADMIN"
         ],
-        "description": "Sin recalcular asignaciones existentes. Inactivo impide nuevas asignaciones, no consume ni invalida créditos entregados.",
+        "description": "Solo ADMIN. PATCH parcial no vacío de name, classCredits, durationDays o active. ID inexistente: 404 PACKAGE_TYPE_NOT_FOUND. La unicidad del nombre usa lower(btrim(name)); colisión: 409 PACKAGE_TYPE_NAME_CONFLICT. Sin recalcular asignaciones existentes. Inactivo impide nuevas asignaciones, pero no modifica asignaciones existentes.",
         "responses": {
           "200": {
             "description": "Operación completada",
@@ -3089,6 +3186,16 @@
           },
           "422": {
             "description": "Campos inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "REQUEST_TOO_LARGE: el body JSON supera el límite permitido.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3146,7 +3253,7 @@
           "ADMIN",
           "MEMBER"
         ],
-        "description": "MEMBER solo propios. Orden expiresOn,assignedAt,id. expiringSoon=true: vigentes con saldo y entre cero y siete días hasta vencer, inclusive.",
+        "description": "ADMIN consulta todas las asignaciones y puede filtrar por socio. MEMBER queda forzado a su propia identidad aunque envíe memberId; PROFESSOR no tiene acceso. Filtros se aplican antes de paginar. Orden expiresOn, assignedAt e id ascendente. Estados con prioridad NOT_STARTED → EXPIRED → EXHAUSTED → ACTIVE. expiringSoon=true selecciona ACTIVE con vencimiento entre hoy y siete días inclusive; false selecciona el complemento; omitido no filtra. daysUntilExpiration es interno y no se expone.",
         "responses": {
           "200": {
             "description": "Operación completada",
@@ -3204,36 +3311,6 @@
               }
             }
           },
-          "404": {
-            "description": "Recurso inexistente",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflicto de negocio o estado",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Campos inválidos",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
           "500": {
             "description": "Error interno sin detalles",
             "content": {
@@ -3254,7 +3331,7 @@
             "name": "page",
             "in": "query",
             "required": false,
-            "description": "",
+            "description": "Página solicitada; predeterminado 1.",
             "schema": {
               "type": "integer",
               "minimum": 1,
@@ -3265,7 +3342,7 @@
             "name": "pageSize",
             "in": "query",
             "required": false,
-            "description": "",
+            "description": "Tamaño de página; predeterminado 20 y máximo 100.",
             "schema": {
               "type": "integer",
               "minimum": 1,
@@ -3277,7 +3354,7 @@
             "name": "memberId",
             "in": "query",
             "required": false,
-            "description": "",
+            "description": "ADMIN: filtra por socio. MEMBER: se ignora como criterio de autorización y la consulta siempre queda limitada a la identidad autenticada.",
             "schema": {
               "type": "integer",
               "minimum": 1
@@ -3287,7 +3364,7 @@
             "name": "status",
             "in": "query",
             "required": false,
-            "description": "",
+            "description": "Filtra por estado derivado NOT_STARTED, ACTIVE, EXHAUSTED o EXPIRED.",
             "schema": {
               "$ref": "#/components/schemas/PackageStatus"
             }
@@ -3296,7 +3373,7 @@
             "name": "expiringSoon",
             "in": "query",
             "required": false,
-            "description": "",
+            "description": "true: ACTIVE con vencimiento de 0 a 7 días inclusive; false: complemento; omitido: sin filtro.",
             "schema": {
               "type": "boolean"
             }
@@ -3313,7 +3390,7 @@
         "x-roles": [
           "ADMIN"
         ],
-        "description": "Socio activo MEMBER y tipo activo. Snapshot de créditos; expiresOn=startsOn+durationDays-1, inclusive. assignedAt del servidor. Duplicado socio/tipo/inicio: 409 PACKAGE_ASSIGNMENT_EXISTS.",
+        "description": "Solo ADMIN. Body exacto memberId, packageTypeId y startsOn (fecha civil YYYY-MM-DD); admite fechas pasadas, presentes o futuras. Requiere socio existente (404 MEMBER_NOT_FOUND), activo (409 INACTIVE_USER) y MEMBER (409 INVALID_MEMBER), y tipo existente (404 PACKAGE_TYPE_NOT_FOUND) y activo (409 INACTIVE_PACKAGE_TYPE). initialCredits y remainingCredits copian classCredits; expiresOn = startsOn + durationDays - 1 días calendario, inclusive (duración 1: mismo día). Se guardan snapshots de créditos y fechas; cambios posteriores del tipo no los alteran, aunque el nombre mostrado proviene del tipo actual. Se permiten vigencias superpuestas. Solo la combinación exacta memberId + packageTypeId + startsOn es duplicada (409 PACKAGE_ASSIGNMENT_EXISTS). assignedAt lo establece el servidor.",
         "responses": {
           "201": {
             "description": "Operación completada",
@@ -3394,6 +3471,16 @@
               }
             }
           },
+          "413": {
+            "description": "REQUEST_TOO_LARGE: el body JSON supera el límite permitido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Error interno sin detalles",
             "content": {
@@ -3432,7 +3519,7 @@
           "ADMIN",
           "MEMBER"
         ],
-        "description": "MEMBER solo propio.",
+        "description": "ADMIN puede consultar cualquier asignación; MEMBER solo una propia y recibe 403 FORBIDDEN al solicitar una ajena; ID inexistente: 404 NOT_FOUND. PROFESSOR no tiene acceso.",
         "responses": {
           "200": {
             "description": "Operación completada",
@@ -3505,26 +3592,6 @@
           },
           "404": {
             "description": "Recurso inexistente",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflicto de negocio o estado",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Campos inválidos",
             "content": {
               "application/json": {
                 "schema": {
@@ -3792,8 +3859,8 @@
                         "id": 2,
                         "name": "Ana Professor"
                       },
-                      "startsAt": "2026-11-10T21:00:00Z",
-                      "endsAt": "2026-11-10T22:00:00Z",
+                      "startsAt": "2030-02-04T15:00:00Z",
+                      "endsAt": "2030-02-04T16:00:00Z",
                       "capacity": 12,
                       "occupiedSpots": 1,
                       "availableSpots": 11,
@@ -4464,6 +4531,7 @@
       },
       "PackageStatus": {
         "type": "string",
+        "description": "Estado derivado con prioridad NOT_STARTED → EXPIRED → EXHAUSTED → ACTIVE según calendario de Argentina.",
         "enum": [
           "NOT_STARTED",
           "ACTIVE",
@@ -4594,11 +4662,13 @@
           },
           "occupiedSpots": {
             "type": "integer",
-            "minimum": 0
+            "minimum": 0,
+            "description": "Cantidad de inscripciones activas."
           },
           "availableSpots": {
             "type": "integer",
-            "minimum": 0
+            "minimum": 0,
+            "description": "Capacidad menos ocupación; nunca es negativa."
           },
           "cancelled": {
             "type": "boolean"
@@ -4622,6 +4692,7 @@
       },
       "PackageType": {
         "type": "object",
+        "description": "El nombre visible de una asignación se obtiene del tipo actual. La unicidad normalizada usa lower(btrim(name)).",
         "additionalProperties": false,
         "properties": {
           "id": {
@@ -4630,6 +4701,7 @@
           },
           "name": {
             "type": "string",
+            "description": "Nombre recortado por el servidor; único sin distinguir mayúsculas/minúsculas ni espacios exteriores.",
             "maxLength": 100
           },
           "classCredits": {
@@ -4654,6 +4726,7 @@
       },
       "MemberPackage": {
         "type": "object",
+        "description": "Incluye snapshots de créditos y fechas. El nombre de packageType refleja el tipo actual. daysUntilExpiration no se expone.",
         "additionalProperties": false,
         "properties": {
           "id": {
@@ -4687,9 +4760,11 @@
             "format": "date-time"
           },
           "status": {
+            "description": "Estado derivado: NOT_STARTED → EXPIRED → EXHAUSTED → ACTIVE.",
             "$ref": "#/components/schemas/PackageStatus"
           },
           "expiringSoon": {
+            "description": "true solo para ACTIVE con vencimiento entre hoy y siete días inclusive; no se calcula ni expone daysUntilExpiration.",
             "type": "boolean"
           }
         },
@@ -5280,14 +5355,82 @@
         "example": {
           "activityId": 1,
           "professorId": 2,
-          "startsAt": "2026-11-10T21:00:00Z",
-          "endsAt": "2026-11-10T22:00:00Z",
+          "startsAt": "2030-02-04T15:00:00Z",
+          "endsAt": "2030-02-04T16:00:00Z",
           "capacity": 12
+        }
+      },
+      "ClassBatchCreate": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Todas las ocurrencias comparten actividad, profesor, horario y capacidad. Las horas se interpretan en America/Argentina/Buenos_Aires y cada clase comienza y termina el mismo día local.",
+        "properties": {
+          "activityId": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "professorId": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "capacity": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "daysOfWeek": {
+            "type": "array",
+            "description": "Días ISO de la semana: 1 lunes, 2 martes, 3 miércoles, 4 jueves, 5 viernes, 6 sábado y 7 domingo.",
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 7
+            },
+            "minItems": 1,
+            "maxItems": 7,
+            "uniqueItems": true
+          },
+          "repeatUntil": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+            "description": "Fecha local inclusiva YYYY-MM-DD en America/Argentina/Buenos_Aires. No puede preceder la fecha local de startsAt; el rango total, incluida la fecha inicial, no supera 84 fechas de calendario."
+          }
+        },
+        "required": [
+          "activityId",
+          "professorId",
+          "startsAt",
+          "endsAt",
+          "capacity",
+          "daysOfWeek",
+          "repeatUntil"
+        ],
+        "example": {
+          "activityId": 3,
+          "professorId": 8,
+          "startsAt": "2030-02-04T15:00:00.000Z",
+          "endsAt": "2030-02-04T16:00:00.000Z",
+          "capacity": 10,
+          "daysOfWeek": [
+            1,
+            3,
+            5
+          ],
+          "repeatUntil": "2030-03-29"
         }
       },
       "ClassPatch": {
         "type": "object",
         "additionalProperties": false,
+        "description": "Campos opcionales e independientes. El servicio combina los valores enviados con el estado actual y valida el resultado.",
         "properties": {
           "activityId": {
             "type": "integer",
@@ -5314,6 +5457,7 @@
       },
       "PackageTypeCreate": {
         "type": "object",
+        "description": "Body estricto. No admite active; el tipo se crea activo y el servidor recorta name. Colisión normalizada lower(btrim(name)): 409 PACKAGE_TYPE_NAME_CONFLICT.",
         "additionalProperties": false,
         "properties": {
           "name": {
@@ -5338,6 +5482,7 @@
       },
       "PackageTypePatch": {
         "type": "object",
+        "description": "Body estricto y parcial; debe incluir al menos un campo. Permite name, classCredits, durationDays y active. Colisión normalizada: 409 PACKAGE_TYPE_NAME_CONFLICT.",
         "additionalProperties": false,
         "properties": {
           "name": {
@@ -5361,6 +5506,7 @@
       },
       "PackageAssignment": {
         "type": "object",
+        "description": "Body estricto con exactamente memberId, packageTypeId y startsOn. startsOn es fecha civil YYYY-MM-DD y admite pasado, presente o futuro.",
         "additionalProperties": false,
         "properties": {
           "memberId": {

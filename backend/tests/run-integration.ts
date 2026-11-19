@@ -26,7 +26,7 @@ async function main() {
   const require = createRequire(import.meta.url);
   const migrated = spawnSync(process.execPath, [require.resolve('prisma/build/index.js'), 'migrate', 'deploy'], { env, stdio: 'inherit' });
   if (migrated.status !== 0) throw new Error('No se pudieron preparar las migraciones de prueba.');
-  const tests = spawnSync(process.execPath, ['--import', 'tsx', '--test', '--test-concurrency=1', 'tests/integration.test.ts'], { env, stdio: 'inherit' });
+  const tests = spawnSync(process.execPath, ['--import', 'tsx', '--test', '--test-concurrency=1', 'tests/integration.test.ts', 'tests/classes.integration.test.ts', 'tests/package-types.integration.test.ts', 'tests/member-packages.integration.test.ts'], { env, stdio: 'inherit' });
   process.exitCode = tests.status ?? 1;
 }
 main().catch((error: unknown) => {

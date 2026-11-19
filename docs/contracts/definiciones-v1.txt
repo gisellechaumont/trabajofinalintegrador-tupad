@@ -92,7 +92,22 @@ Error: {"error": {"code": "CLASS_FULL", "message": "No hay cupos disponibles.", 
 
 Códigos HTTP: 200 consulta/actualización/acción exitosa; 201 creación; 204 cambio de contraseña sin cuerpo; 400 JSON o filtros inválidos; 401 credenciales/sesión inválida; 403 permisos; 404 inexistente; 409 duplicado o conflicto de estado/negocio; 422 campos inválidos; 500 error inesperado sin detalles internos.
 
-Códigos estables de negocio: EMAIL_IN_USE, NAME_IN_USE, INACTIVE_USER, INVALID_PROFESSOR, INACTIVE_ACTIVITY, CLASS_FULL, CLASS_CANCELLED, CLASS_STARTED, ALREADY_ENROLLED, NO_USABLE_PACKAGE, CANCELLATION_WINDOW_CLOSED, ALREADY_CANCELLED, CAPACITY_BELOW_ENROLLMENTS, CLASS_HAS_ENROLLMENTS, INVALID_ATTENDANCE, PACKAGE_ASSIGNMENT_EXISTS. Para 401 de login usar INVALID_CREDENTIALS sin revelar si el correo existe o la cuenta está inactiva.
+Códigos estables de negocio generales: EMAIL_IN_USE, NAME_IN_USE, CLASS_FULL, CLASS_CANCELLED, ALREADY_ENROLLED, NO_USABLE_PACKAGE, CANCELLATION_WINDOW_CLOSED, INVALID_ATTENDANCE y PACKAGE_ASSIGNMENT_EXISTS. Para 401 de login usar INVALID_CREDENTIALS sin revelar si el correo existe o la cuenta está inactiva.
+
+Códigos implementados por Clases: CLASS_SCHEDULE_CONFLICT, CLASS_HAS_ENROLLMENTS, CAPACITY_BELOW_ENROLLMENTS, CONCURRENT_MODIFICATION, INACTIVE_ACTIVITY, INVALID_PROFESSOR, INACTIVE_USER, ALREADY_CANCELLED, CLASS_STARTED, NOT_FOUND, ACTIVITY_NOT_FOUND, PROFESSOR_NOT_FOUND, INVALID_CLASS_TIME, CLASS_MUST_BE_FUTURE, INVALID_RECURRENCE_RANGE, NO_CLASS_OCCURRENCES y VALIDATION_ERROR. Los conflictos de concurrencia agotados responden 409 CONCURRENT_MODIFICATION; no se reutiliza CLASS_HAS_ENROLLMENTS para ese caso.
+
+#### Contrato de clases
+
+El prefijo de estas rutas es `/api/v1` y requieren autenticación. ADMIN puede crear, modificar y cancelar clases; ADMIN y PROFESSOR consultan la agenda general. PROFESSOR puede filtrar la agenda por cualquier `professorId` y consultar el detalle básico de cualquier clase. MEMBER solo recibe clases `SCHEDULED`, futuras y no canceladas; el backend impone ese estado aunque se envíe otro filtro. La consulta general admite `from` inclusivo, `to` exclusivo, `activityId`, `professorId`, `status`, `page` y `pageSize`, ordena por `startsAt` e `id`, calcula `occupiedSpots` desde inscripciones activas y nunca devuelve `availableSpots` negativo.
+
+- `POST /classes`: exclusivo de ADMIN; conserva el contrato de creación individual con `activityId`, `professorId`, `startsAt`, `endsAt` y `capacity`; responde 201 con `{ "data": ClassView }`.
+- `POST /classes/batch`: exclusivo de ADMIN; recibe esos cinco campos más `daysOfWeek` y `repeatUntil`. `daysOfWeek` usa 1=lunes a 7=domingo, requiere al menos un valor y no admite duplicados. `repeatUntil` es una fecha local `YYYY-MM-DD` inclusiva. El rango, contando la fecha inicial y la final, no puede superar 84 fechas de calendario. Cada clase comienza y termina el mismo día local en `America/Argentina/Buenos_Aires`. Crea ocurrencias independientes en una transacción y responde 201 con `{ "data": ClassView[] }`. Una colisión por `(activityId, professorId, startsAt)` responde 409 `CLASS_SCHEDULE_CONFLICT` y no deja clases parciales. Si el rango no produce ocurrencias responde 422 `NO_CLASS_OCCURRENCES`.
+- `GET /classes`: listado y filtros descritos arriba. `status` no amplía la oferta visible para MEMBER.
+- `GET /classes/{id}`: cualquier rol autenticado puede consultar el detalle básico; no restringe a PROFESSOR a sus clases asignadas ni expone la lista nominal de inscriptos.
+- `PATCH /classes/{id}`: exclusivo de ADMIN y solo para clases futuras no canceladas. Sin inscripciones activas se pueden modificar los campos opcionales enviados. Con inscripciones activas, los valores semánticamente idempotentes de `activityId`, `professorId`, `startsAt` y `endsAt` se aceptan; las fechas se comparan como instantes. Se permite cambiar `capacity` si no queda por debajo de la ocupación. Los cambios reales en actividad, profesor o fechas responden 409 `CLASS_HAS_ENROLLMENTS`; la capacidad inferior a la ocupación responde `CAPACITY_BELOW_ENROLLMENTS`.
+- `POST /classes/{id}/cancel`: exclusivo de ADMIN y solo antes del inicio. Cancela lógicamente la clase, cancela inscripciones activas y reintegra créditos a los paquetes originales en una operación atómica. El reintegro no se duplica; una repetición responde 409 `ALREADY_CANCELLED`. Si persiste un conflicto serializable tras los reintentos responde 409 `CONCURRENT_MODIFICATION`.
+
+Todos los instantes de entrada son RFC 3339 con zona u offset y las respuestas usan UTC con `Z`. La zona de negocio para las fechas locales del lote es `America/Argentina/Buenos_Aires`.
 
 No hay DELETE físico de usuarios, clases, actividades, tipos o inscripciones. Se conservan estados e historial. Tampoco hay endpoints de pagos, listas de espera, notificaciones o recuperación automática de contraseña.
 
@@ -102,7 +117,7 @@ Roles técnicos: ADMIN, PROFESSOR y MEMBER. Las etiquetas visibles son Administr
 
 Authorization: Bearer <token>. JWT firmado con HS256, algoritmo permitido explícitamente; sub es el id del usuario como texto; iat y exp, duración de 3600 segundos; iss=gymflow; aud=gymflow-web. Se verifica firma, algoritmo, vencimiento, emisor y audiencia. El rol del JWT no reemplaza al rol actual de la base.
 
-El contexto que recibe un módulo del backend es req.user = {id, role}; nunca un id que provenga del cuerpo. La base entrega requireAuth y allowRoles(...roles). La propiedad del recurso sigue siendo responsabilidad del módulo: por ejemplo, Emilia verifica que la clase pertenezca al profesor.
+El contexto que recibe un módulo del backend es req.user = {id, role}; nunca un id que provenga del cuerpo. La base entrega requireAuth y allowRoles(...roles). La propiedad del recurso sigue siendo responsabilidad del módulo para operaciones restringidas, como consultar inscriptos o registrar asistencia en una clase asignada.
 
 Contraseñas nuevas: de 12 a 128 caracteres, sin truncarlas ni aplicar trim. Hash Argon2id con sal individual; parámetros mínimos de coordinación: memoryCost 19456 KiB, timeCost 2, parallelism 1. Nunca devolver passwordHash. La biblioteca concreta y su versión se fijan en el manifiesto inicial. Validar credenciales con la función de verificación de la biblioteca, no comparando hashes manualmente.
 
@@ -112,11 +127,11 @@ Cambiar contraseña requiere la actual y la nueva; invalida la sesión del naveg
 
 Matriz resumida:
 - ADMIN: gestiona socios/profesores, actividades, clases, tipos, paquetes e inscripciones; registra asistencia e inspecciona historiales y panel.
-- PROFESSOR: consulta solo sus clases, su lista de inscriptos y sus asistencias; puede registrarlas/corregirlas. No consulta paquetes de otros ni listados generales de socios.
+- PROFESSOR: consulta la agenda general de clases, filtra por cualquier profesor y accede al detalle básico de cualquier clase. La consulta de inscriptos y las operaciones de asistencia se limitan a clases asignadas. No consulta paquetes de otros ni listados generales de socios.
 - MEMBER: consulta actividades activas y programación pública para usuarios autenticados; ve y gestiona únicamente sus inscripciones, paquetes e historial.
 - Todos: consultar su identidad, editar nombre/correo propios y cambiar su contraseña, según UI-03 y UI-04. No pueden cambiarse rol ni estado.
 
-La vista de calendario general para profesores contradice RN-04 y la matriz de módulos. Para esta base se conserva el permiso más restrictivo: solo clases asignadas. El contrato no habilita calendario ajeno ni acceso a inscriptos de otras clases. Es una resolución explícita para trabajar, no una aprobación atribuida al tutor; si confirma el calendario general, cambiar solo el alcance de lectura básica sin abrir asistencia ni datos personales de clases ajenas.
+La consulta general de agenda y el detalle básico de clases están permitidos a PROFESSOR; filtrar por otro profesor no produce 403. Este permiso de lectura no amplía las operaciones sobre inscriptos ni asistencia, que siguen limitadas a clases asignadas.
 
 7. MODELO DE DATOS OBJETIVO
 
@@ -136,7 +151,7 @@ class_reservations: id; class_id; member_id; member_package_id; cancelled; creat
 
 Cada inscripción nace con asistencia PENDING y sin autor/fecha de registro. Registrar PRESENT o ABSENT fija ambos. Corregir reemplaza el estado y la última persona/fecha que lo registró; no se promete un historial completo de cada edición. No se almacenan motivo ni autor de cancelación, tal como dice el diseño. cancelled_at y credit_refunded permiten controlar estado y devolución, no agregan un motivo.
 
-Restricciones en SQL: saldo entre cero y créditos iniciales; capacidad positiva; fin posterior a inicio; duración/créditos positivos; claves foráneas sin cascadas de borrado; índice único parcial de (class_id, member_id) cuando cancelled=false. Así se impide duplicar una reserva usando dos paquetes distintos y se permite reinscribirse después de cancelar conservando las filas antiguas.
+Restricciones en SQL: saldo entre cero y créditos iniciales; capacidad positiva; para clases, fin posterior al inicio; para paquetes, expiresOn igual o posterior a startsOn; duración/créditos positivos; claves foráneas sin cascadas de borrado; índice único parcial de (class_id, member_id) cuando cancelled=false. Así se impide duplicar una reserva usando dos paquetes distintos y se permite reinscribirse después de cancelar conservando las filas antiguas.
 
 Unicidad de asignación: mismo socio + tipo + fecha de inicio no se asigna dos veces; devuelve 409. Sí puede tener varios tipos o asignaciones de fechas distintas, con vigencias superpuestas.
 
@@ -144,15 +159,17 @@ Los CHECK e índices parciales del SQL son parte del modelo, aunque Prisma no lo
 
 8. FECHAS, PAQUETES Y ESTADOS DERIVADOS
 
-La vigencia incluye startsOn y expiresOn. Al asignar un tipo de D días: expiresOn = startsOn + D - 1 días calendario, en la zona de negocio. Un paquete de un día vence ese mismo día. Esto precisa la semántica que los documentos no cerraban; el CHECK viejo ya permitía igualdad de fechas.
+La vigencia incluye startsOn y expiresOn. Para un paquete de D días: expiresOn = startsOn + D - 1 días calendario, en la zona de negocio. Un paquete de un día inicia y vence el mismo día; por eso expiresOn puede ser igual a startsOn. Para una clase, en cambio, el fin debe ser posterior al inicio. Esto precisa la semántica que los documentos históricos no cerraban; el CHECK viejo ya permitía igualdad de fechas para paquetes.
 
 Un paquete utilizable tiene saldo positivo y cubre tanto la fecha actual de negocio como la fecha de inicio de la clase. El socio debe estar activo. Se elige por expiresOn ascendente, assignedAt ascendente y, como desempate estable, id ascendente. No se obliga al socio a seleccionar ni enviar el paquete manualmente.
 
-Estado de paquete, sin almacenarlo aparte: NOT_STARTED si hoy es anterior a startsOn; EXPIRED si hoy es posterior a expiresOn; EXHAUSTED si está vigente y sin saldo; ACTIVE si está vigente y con saldo positivo. Próximo a vencer = ACTIVE y faltan entre 0 y 7 días calendario inclusive. No incluye vencidos ni sin saldo.
+Estado de paquete, sin almacenarlo aparte y con prioridad NOT_STARTED → EXPIRED → EXHAUSTED → ACTIVE: NOT_STARTED si hoy es anterior a startsOn; EXPIRED si hoy es posterior a expiresOn; EXHAUSTED si está vigente y sin saldo; ACTIVE si está vigente y con saldo positivo. expiringSoon=true selecciona ACTIVE con vencimiento entre hoy y siete días inclusive; false selecciona su complemento; omitido no filtra. daysUntilExpiration es interno y no se expone. Los snapshots son créditos y fechas; el nombre mostrado proviene del tipo actual. No hay eliminación, renovación ni modificación manual del saldo.
 
 Estado de clase derivado: CANCELLED si cancelled; FINISHED desde endsAt inclusive; IN_PROGRESS desde startsAt inclusive y antes de endsAt; SCHEDULED antes de startsAt. Las inscripciones solo se crean para SCHEDULED. Todas estas comparaciones se resuelven en el servidor.
 
-Para no alterar reservas existentes silenciosamente, una clase con inscripciones activas permite cambiar solo capacity, siempre que no quede por debajo de la ocupación. Cambiar actividad, profesor u horario en ese caso devuelve CLASS_HAS_ENROLLMENTS; la alternativa es cancelar y programar otra clase. Es una política técnica de coordinación propuesta aquí para cerrar un caso no especificado, no una regla confirmada del tablero. Debe revisarse con los criterios de HU-15 antes de adoptar una política distinta.
+Sin inscripciones activas, una clase futura no cancelada admite los campos opcionales enviados, sujetos a la validación del estado final. Con inscripciones activas, el PATCH acepta los mismos valores de actividad, profesor e instantes de inicio/finalización como operación idempotente; los instantes se comparan por valor temporal, no por representación textual. Los cambios reales de esos campos devuelven CLASS_HAS_ENROLLMENTS. La capacidad puede modificarse si no queda por debajo de la ocupación; de lo contrario devuelve CAPACITY_BELOW_ENROLLMENTS. Estas validaciones se realizan dentro de la transacción.
+
+La creación semanal de clases es un lote finito de ocurrencias independientes, no una regla de recurrencia persistente. No existe entidad de serie ni edición o cancelación conjunta.
 
 La programación y edición operan sobre clases futuras. La asistencia se registra desde el inicio; no se marca un socio ausente solo porque todavía no se tomó asistencia. Los estados históricos permanecen consultables.
 
@@ -199,10 +216,10 @@ Giselle:
 - GET/POST /activities; GET/PATCH /activities/{id}. Lectura activa para roles autenticados, gestión solo ADMIN.
 
 Emilia:
-- GET/POST /classes; GET/PATCH /classes/{id}; POST /classes/{id}/cancel.
+- GET/POST /classes; POST /classes/batch; GET/PATCH /classes/{id}; POST /classes/{id}/cancel.
 - GET /classes/{id}/eligibility; GET /classes/{id}/enrollments; PUT /classes/{id}/attendance.
-- GET/POST /package-types; GET/PATCH /package-types/{id}. Solo ADMIN.
-- GET/POST /member-packages; GET /member-packages/{id}. ADMIN asigna; MEMBER solo lee los propios.
+- GET/POST /package-types; GET/PATCH /package-types/{id}. Solo ADMIN. Búsqueda insensible a mayúsculas/minúsculas y filtros/paginación documentados en OpenAPI. Códigos: PACKAGE_TYPE_NOT_FOUND y PACKAGE_TYPE_NAME_CONFLICT.
+- GET/POST /member-packages; GET /member-packages/{id}. ADMIN asigna y consulta; MEMBER consulta solo los propios y recibe 403 al pedir un detalle ajeno; PROFESSOR no accede. Filtros de socio, estado y expiringSoon. Códigos: MEMBER_NOT_FOUND, INVALID_MEMBER, INACTIVE_USER, PACKAGE_TYPE_NOT_FOUND, INACTIVE_PACKAGE_TYPE y PACKAGE_ASSIGNMENT_EXISTS.
 - GET/POST /enrollments; GET /enrollments/{id}; POST /enrollments/{id}/cancel. ADMIN o socio propietario.
 - GET /history. ADMIN todos, MEMBER propio, PROFESSOR solo clases asignadas y sin datos privados innecesarios.
 - GET /dashboard. Solo ADMIN.
@@ -260,4 +277,4 @@ Referencias técnicas utilizadas para definir el contrato y las garantías:
 - Bloqueos de filas PostgreSQL: https://www.postgresql.org/docs/current/explicit-locking.html
 - Hash de contraseñas y Argon2id: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
 
-Las decisiones nuevas de coordinación son explícitas: vocabulario HTTP, formato de errores/listas, vencimiento inclusivo, snapshots de créditos, política de cambios con inscriptos, alcance conservador del profesor, sesión sin persistencia y interfaces de montaje. No afirmar que el tutor aprobó estas decisiones ni que las pruebas de la aplicación se ejecutaron por haber validado los documentos.
+Las decisiones y contratos vigentes incluyen el vocabulario HTTP, el formato de errores/listas, el vencimiento inclusivo, los snapshots de créditos, la política idempotente de PATCH con inscripciones y la consulta de agenda general para PROFESSOR. La lectura general no amplía las operaciones sobre inscriptos o asistencia, que siguen restringidas a clases asignadas. No afirmar que las pruebas de la aplicación se ejecutaron por haber actualizado esta documentación.

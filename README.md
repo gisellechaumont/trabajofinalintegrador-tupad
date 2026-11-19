@@ -36,7 +36,7 @@ La documentación completa del proyecto se encuentra en la carpeta [`docs`](docs
 - [Propuesta del proyecto](docs/propuesta-proyecto.md)
   Planteamiento del problema, justificación, evaluación competitiva, objetivos y roles del sistema.
 
-- [Alcance, arquitectura y viabilidad](docs/alcance-arquitectura-y-viabilidad.md)
+- [Alcance, arquitectura y viabilidad](docs/alcance-y-viabilidad.md)
   Alcance del MVP, exclusiones, reglas de negocio, stack tecnológico, arquitectura, estructura del repositorio y análisis de viabilidad.
 
 - [Gestión y planificación](docs/gestion-y-planificacion.md)
@@ -60,7 +60,7 @@ La documentación completa del proyecto se encuentra en la carpeta [`docs`](docs
 GymFlow es un trabajo integrador desarrollado de forma modular en equipo. El repositorio organiza el alcance funcional en dos bloques de trabajo:
 
 - **Módulo de Administración, Seguridad y Base Compartida:** Arquitectura base del sistema, persistencia relacional con PostgreSQL y Prisma, autenticación JWT/Argon2id, control de acceso por roles, gestión integral de socios, profesores y catálogo de actividades (ARQ-03/04, TEC-03 a TEC-08 y HU-01 a HU-12).
-- **Módulo Operativo:** Programación y gestión de clases, cupos, tipos de paquetes y asignaciones, inscripciones y cancelaciones con control de concurrencia, toma de asistencia, historiales y panel de control (HU-13 a HU-32, a cargo de Emilia). Dispone de sus puntos de montaje listos en `operational.routes` tanto en backend como en frontend para su integración desacoplada.
+- **Módulo Operativo:** Clases y cupos (HU-13 a HU-17), y paquetes —tipos, asignaciones y consulta (HU-18 a HU-23)— ya están integrados. Inscripciones, asistencias, historiales y panel (HU-24 a HU-32) permanecen pendientes. Los puntos de montaje en `operational.routes` del backend y del frontend permiten integrar esos módulos pendientes de forma desacoplada.
 
 ---
 
@@ -128,6 +128,3 @@ Comandos individuales:
 - Pruebas unitarias y de componentes (Vitest): `npm test`
 - Pruebas de integración HTTP contra base PostgreSQL real (`gymflow_test`): `npm run test:integration`
 
-```[cite: 2, 3]
-
-```

@@ -17,14 +17,11 @@ export interface EnrollmentEligibility {
   remainingCreditsAfterEnrollment: number | null;
 }
 
-export interface EnrollmentPackage {
-  id: number;
+export type EnrollmentAttendanceStatus = 'PENDING' | 'PRESENT' | 'ABSENT';
+
+export interface EnrollmentMemberPackage {
   packageType: NamedRef;
-  startsOn: string;
-  expiresOn: string;
-  initialCredits: number;
   remainingCredits: number;
-  assignedAt: string;
 }
 
 export interface EnrollmentRecord {
@@ -35,21 +32,18 @@ export interface EnrollmentRecord {
   cancelled: boolean;
   cancelledAt: string | null;
   creditRefunded: boolean;
-  attendanceStatus: 'PENDING' | 'PRESENT' | 'ABSENT' | string;
+  attendanceStatus: EnrollmentAttendanceStatus;
   attendanceRecordedBy: number | null;
   attendanceRecordedAt: string | null;
   createdAt: string;
   member: NamedRef;
-  package: EnrollmentPackage;
+  memberPackage: EnrollmentMemberPackage;
   class: {
-    id: number;
     startsAt: string;
     endsAt: string;
-    capacity: number;
     cancelled: boolean;
     activity: NamedRef;
     professor: NamedRef;
-    _count: { enrollments: number };
   };
 }
 

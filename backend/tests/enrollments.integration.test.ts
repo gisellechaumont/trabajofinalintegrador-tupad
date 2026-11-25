@@ -61,17 +61,71 @@ function enrollAs(role: RoleKey, classId: number, memberId?: number) {
 }
 function expectCode(response: { body: { error?: { code?: string } } }, code: string) { assert.equal(response.body.error?.code, code); }
 
+function assertRecord(value: unknown): asserts value is Record<string, unknown> {
+  assert.ok(value !== null && typeof value === 'object' && !Array.isArray(value));
+}
+
+function assertIsoInstant(value: unknown) {
+  assert.equal(typeof value, 'string');
+  assert.equal(new Date(value as string).toISOString(), value);
+}
+
+function expectEnrollmentView(value: unknown, expectedPackageCredits?: number) {
+  assertRecord(value);
+  assert.deepEqual(Object.keys(value).sort(), [
+    'id', 'classId', 'memberId', 'memberPackageId', 'cancelled', 'cancelledAt', 'creditRefunded',
+    'attendanceStatus', 'attendanceRecordedBy', 'attendanceRecordedAt', 'createdAt', 'member', 'class', 'memberPackage',
+  ].sort());
+  assertIsoInstant(value.createdAt);
+  if (value.cancelledAt !== null) assertIsoInstant(value.cancelledAt);
+  if (value.attendanceRecordedAt !== null) assertIsoInstant(value.attendanceRecordedAt);
+  assert.ok(['PENDING', 'PRESENT', 'ABSENT'].includes(String(value.attendanceStatus)));
+
+  assertRecord(value.member);
+  assert.deepEqual(Object.keys(value.member).sort(), ['id', 'name']);
+  assert.equal('email' in value.member, false);
+
+  assertRecord(value.class);
+  assert.deepEqual(Object.keys(value.class).sort(), ['startsAt', 'endsAt', 'cancelled', 'activity', 'professor'].sort());
+  assertIsoInstant(value.class.startsAt);
+  assertIsoInstant(value.class.endsAt);
+  assert.equal('activityId' in value.class, false);
+  assert.equal('professorId' in value.class, false);
+  assert.equal('_count' in value.class, false);
+  assertRecord(value.class.activity);
+  assert.deepEqual(Object.keys(value.class.activity).sort(), ['id', 'name']);
+  assertRecord(value.class.professor);
+  assert.deepEqual(Object.keys(value.class.professor).sort(), ['id', 'name']);
+
+  assertRecord(value.memberPackage);
+  assert.deepEqual(Object.keys(value.memberPackage).sort(), ['packageType', 'remainingCredits']);
+  assertRecord(value.memberPackage.packageType);
+  assert.deepEqual(Object.keys(value.memberPackage.packageType).sort(), ['id', 'name']);
+  if (expectedPackageCredits !== undefined) assert.equal(value.memberPackage.remainingCredits, expectedPackageCredits);
+  assert.equal('package' in value, false);
+}
+
+function expectEligibilityView(value: unknown) {
+  assertRecord(value);
+  assert.deepEqual(Object.keys(value).sort(), ['canEnroll', 'reasonCode', 'message', 'selectedPackage', 'expectedRemainingCredits'].sort());
+  for (const field of ['reason', 'memberPackageId', 'packageTypeName', 'remainingCredits', 'remainingCreditsAfterEnrollment']) {
+    assert.equal(field in value, false);
+  }
+}
+
 test('HU-24: elegibilidad no muta, MEMBER y ADMIN crean con selección automática priorizada y débito exacto', async () => {
   const klass = await createClass();
   const later = await createPackage(ids.member, { expiresOn: '2030-07-10', credits: 4, assignedAt: new Date('2030-06-10T12:00:00Z') });
   const earlier = await createPackage(ids.member, { expiresOn: '2030-06-25', credits: 3, assignedAt: new Date('2030-06-12T12:00:00Z'), typeActive: false });
   const preview = await request(app).get(`/api/v1/classes/${klass.id}/eligibility`).set(auth('member')).expect(200);
+  expectEligibilityView(preview.body.data);
   assert.equal(preview.body.data.canEnroll, true);
   assert.equal(preview.body.data.selectedPackage.id, earlier.id);
-  assert.equal(preview.body.data.remainingCredits, 3);
-  assert.equal(preview.body.data.remainingCreditsAfterEnrollment, 2);
+  assert.equal(preview.body.data.selectedPackage.remainingCredits, 3);
+  assert.equal(preview.body.data.expectedRemainingCredits, 2);
   assert.equal((await prisma.memberPackage.findUniqueOrThrow({ where: { id: earlier.id } })).remainingCredits, 3);
   const created = await enrollAs('member', klass.id).expect(201);
+  expectEnrollmentView(created.body.data, 2);
   assert.equal(created.body.data.memberPackageId, earlier.id);
   assert.equal((await prisma.memberPackage.findUniqueOrThrow({ where: { id: earlier.id } })).remainingCredits, 2);
   assert.equal((await prisma.memberPackage.findUniqueOrThrow({ where: { id: later.id } })).remainingCredits, 4);
@@ -79,6 +133,7 @@ test('HU-24: elegibilidad no muta, MEMBER y ADMIN crean con selección automáti
   const adminClass = await createClass(future(30));
   const adminPack = await createPackage(ids.other);
   const adminCreated = await enrollAs('admin', adminClass.id, ids.other).expect(201);
+  expectEnrollmentView(adminCreated.body.data, 4);
   assert.equal(adminCreated.body.data.memberId, ids.other);
   assert.equal(adminCreated.body.data.memberPackageId, adminPack.id);
 });
@@ -90,6 +145,7 @@ test('HU-24: selección desempata por assignedAt e ID y exige que paquete cubra 
   const startsAfterClassDate = await createPackage(ids.member, { startsOn: '2030-06-19', expiresOn: '2030-07-20' });
   const expiresBeforeClassDate = await createPackage(ids.member, { startsOn: TODAY, expiresOn: '2030-06-16' });
   const preview = await request(app).get(`/api/v1/classes/${klass.id}/eligibility`).set(auth('admin')).query({ memberId: ids.member }).expect(200);
+  expectEligibilityView(preview.body.data);
   assert.equal(preview.body.data.selectedPackage.id, Math.min(tiedLaterId.id, tiedEarlierId.id));
   assert.notEqual(preview.body.data.selectedPackage.id, startsAfterClassDate.id);
   assert.notEqual(preview.body.data.selectedPackage.id, expiresBeforeClassDate.id);
@@ -100,15 +156,22 @@ test('HU-24: elegibilidad expresa causas de negocio en 200 y valida identidad y 
   const occupiedPack = await createPackage(ids.other);
   await prisma.enrollment.create({ data: { classId: full.id, memberId: ids.other, memberPackageId: occupiedPack.id } });
   const fullResult = await request(app).get(`/api/v1/classes/${full.id}/eligibility`).set(auth('member')).expect(200);
+  expectEligibilityView(fullResult.body.data);
   assert.equal(fullResult.body.data.reasonCode, 'CLASS_FULL');
   const cancelled = await createClass(future(28));
   await prisma.class.update({ where: { id: cancelled.id }, data: { cancelled: true } });
-  assert.equal((await request(app).get(`/api/v1/classes/${cancelled.id}/eligibility`).set(auth('member')).expect(200)).body.data.reasonCode, 'CLASS_CANCELLED');
+  const cancelledEligibility = await request(app).get(`/api/v1/classes/${cancelled.id}/eligibility`).set(auth('member')).expect(200);
+  expectEligibilityView(cancelledEligibility.body.data);
+  assert.equal(cancelledEligibility.body.data.reasonCode, 'CLASS_CANCELLED');
   const cancelledPost = await enrollAs('member', cancelled.id).expect(409); expectCode(cancelledPost, 'CLASS_CANCELLED');
   const started = await createClass(new Date(NOW.getTime() - 1_000));
-  assert.equal((await request(app).get(`/api/v1/classes/${started.id}/eligibility`).set(auth('member')).expect(200)).body.data.reasonCode, 'CLASS_STARTED');
+  const startedEligibility = await request(app).get(`/api/v1/classes/${started.id}/eligibility`).set(auth('member')).expect(200);
+  expectEligibilityView(startedEligibility.body.data);
+  assert.equal(startedEligibility.body.data.reasonCode, 'CLASS_STARTED');
   const noPackClass = await createClass(future(32));
-  assert.equal((await request(app).get(`/api/v1/classes/${noPackClass.id}/eligibility`).set(auth('member')).expect(200)).body.data.reasonCode, 'NO_USABLE_PACKAGE');
+  const noPackageEligibility = await request(app).get(`/api/v1/classes/${noPackClass.id}/eligibility`).set(auth('member')).expect(200);
+  expectEligibilityView(noPackageEligibility.body.data);
+  assert.equal(noPackageEligibility.body.data.reasonCode, 'NO_USABLE_PACKAGE');
   await request(app).get(`/api/v1/classes/${noPackClass.id}/eligibility`).set(auth('admin')).expect(400);
   await request(app).get(`/api/v1/classes/${noPackClass.id}/eligibility`).set(auth('member')).query({ memberId: ids.other }).expect(403);
   await request(app).get(`/api/v1/classes/${noPackClass.id}/eligibility`).set(auth('professor')).expect(403);
@@ -133,6 +196,7 @@ test('HU-24: alta valida roles, payload estricto, socio activo y elegibilidad; m
   const inactive = await prisma.user.create({ data: { name: 'Inactivo', email: 'inactive@enrollments.test', role: 'MEMBER', active: false, passwordHash: 'fixture' } });
   const inactiveResult = await enrollAs('admin', klass.id, inactive.id).expect(409); expectCode(inactiveResult, 'INACTIVE_USER');
   const result = await enrollAs('admin', klass.id, ids.member).expect(201);
+  expectEnrollmentView(result.body.data, 4);
   assert.equal(result.body.data.memberPackageId, pack.id);
   assert.equal(result.body.data.cancelled, false);
   assert.equal(result.body.data.creditRefunded, false);
@@ -151,8 +215,9 @@ test('HU-24: rechaza clase terminada, cupo completo y duplicado activo incluso c
   const packageTwo = await createPackage(ids.member);
   await prisma.enrollment.create({ data: { classId: klass.id, memberId: ids.member, memberPackageId: packageOne.id } });
   const duplicateEligibility = await request(app).get(`/api/v1/classes/${klass.id}/eligibility`).set(auth('member')).expect(200);
-  assert.equal(duplicateEligibility.body.data.reason, 'ALREADY_ENROLLED');
-  const duplicate = await enrollAs('member', klass.id).expect(409); expectCode(duplicate, 'ALREADY_ENROLLED');
+  assert.equal(duplicateEligibility.body.data.reasonCode, 'ALREADY_ENROLLED');
+  const duplicate = await enrollAs('member', klass.id).expect(409);
+  assert.equal(duplicate.body.error.code, 'ALREADY_ENROLLED');
   assert.equal((await prisma.memberPackage.findUniqueOrThrow({ where: { id: packageTwo.id } })).remainingCredits, 5);
 });
 
@@ -194,6 +259,7 @@ test('HU-25: cancela exactamente dos horas antes, reintegra al paquete original 
   const original = await createPackage(ids.member, { credits: 2 });
   const enrollment = await prisma.enrollment.create({ data: { classId: klass.id, memberId: ids.member, memberPackageId: original.id } });
   const cancelled = await request(app).post(`/api/v1/enrollments/${enrollment.id}/cancel`).set(auth('member')).send({}).expect(200);
+  expectEnrollmentView(cancelled.body.data, 3);
   assert.equal(cancelled.body.data.cancelled, true);
   assert.equal(cancelled.body.data.creditRefunded, true);
   assert.ok(cancelled.body.data.cancelledAt);
@@ -273,13 +339,17 @@ test('HU-26: listado filtra, pagina y ordena; MEMBER queda aislado y detalle aje
   // from is inclusive; to is exclusive, so the third class starts exactly at the excluded boundary.
   const adminPage = await request(app).get(`/api/v1/enrollments?page=1&pageSize=1&from=2030-06-16T00:00:00.000Z&to=${encodeURIComponent(thirdClass.startsAt.toISOString())}`).set(auth()).expect(200);
   assert.equal(adminPage.body.meta.total, 2);
+  expectEnrollmentView(adminPage.body.data[0]);
   assert.equal(adminPage.body.data[0].id, ownFirst.id);
   const adminFiltered = await request(app).get(`/api/v1/enrollments?memberId=${ids.other}&classId=${thirdClass.id}&cancelled=false`).set(auth()).expect(200);
   assert.equal(adminFiltered.body.meta.total, 1);
+  expectEnrollmentView(adminFiltered.body.data[0]);
   assert.equal(adminFiltered.body.data[0].id, foreign.id);
   const memberList = await request(app).get(`/api/v1/enrollments?memberId=${ids.other}`).set(auth('member')).expect(200);
   assert.deepEqual(memberList.body.data.map((row: { id: number }) => row.id), [ownFirst.id, ownSecond.id]);
-  await request(app).get(`/api/v1/enrollments/${ownFirst.id}`).set(auth('member')).expect(200);
+  expectEnrollmentView(memberList.body.data[0]);
+  const ownDetail = await request(app).get(`/api/v1/enrollments/${ownFirst.id}`).set(auth('member')).expect(200);
+  expectEnrollmentView(ownDetail.body.data);
   const foreignDetail = await request(app).get(`/api/v1/enrollments/${foreign.id}`).set(auth('member')).expect(403); expectCode(foreignDetail, 'FORBIDDEN');
   await request(app).get('/api/v1/enrollments/2147483647').set(auth()).expect(404);
   await request(app).get('/api/v1/enrollments/not-an-id').set(auth()).expect(400);

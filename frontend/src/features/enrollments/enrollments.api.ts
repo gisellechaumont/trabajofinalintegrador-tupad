@@ -7,24 +7,14 @@ import type {
   EnrollmentsQuery,
   EligibilityReason,
 } from './enrollments.types';
-
-interface EligibilityWirePackage {
-  id?: number;
-  packageType?: { name?: string };
-  remainingCredits?: number;
-}
+import type { MemberPackage } from '../packages/packages.types';
 
 interface EligibilityWireResponse {
   canEnroll: boolean;
   message: string;
-  reason?: EligibilityReason | null;
-  reasonCode?: EligibilityReason | null;
-  memberPackageId?: number | null;
-  packageTypeName?: string | null;
-  remainingCredits?: number | null;
-  remainingCreditsAfterEnrollment?: number | null;
-  selectedPackage?: EligibilityWirePackage | null;
-  expectedRemainingCredits?: number | null;
+  reasonCode: EligibilityReason | null;
+  selectedPackage: MemberPackage | null;
+  expectedRemainingCredits: number | null;
 }
 
 function queryString(query: object) {
@@ -36,21 +26,15 @@ function queryString(query: object) {
   return result ? `?${result}` : '';
 }
 
-/**
- * El backend aún devuelve la forma documentada y campos directos adicionales.
- * Esta normalización temporal concentra la compatibilidad hasta sincronizar OpenAPI.
- */
 function normalizeEligibility(wire: EligibilityWireResponse): EnrollmentEligibility {
-  const directPackageTypeName = wire.packageTypeName?.trim();
-  const compatiblePackageTypeName = wire.selectedPackage?.packageType?.name?.trim();
   return {
     canEnroll: wire.canEnroll,
-    reason: wire.reason ?? wire.reasonCode ?? null,
+    reason: wire.reasonCode,
     message: wire.message,
-    memberPackageId: wire.memberPackageId ?? wire.selectedPackage?.id ?? null,
-    packageTypeName: directPackageTypeName || compatiblePackageTypeName || null,
-    remainingCredits: wire.remainingCredits ?? wire.selectedPackage?.remainingCredits ?? null,
-    remainingCreditsAfterEnrollment: wire.remainingCreditsAfterEnrollment ?? wire.expectedRemainingCredits ?? null,
+    memberPackageId: wire.selectedPackage?.id ?? null,
+    packageTypeName: wire.selectedPackage?.packageType.name ?? null,
+    remainingCredits: wire.selectedPackage?.remainingCredits ?? null,
+    remainingCreditsAfterEnrollment: wire.expectedRemainingCredits,
   };
 }
 

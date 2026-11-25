@@ -3,19 +3,16 @@ import { prisma } from '../../config/prisma.js';
 import { AppError } from '../../shared/errors.js';
 import { businessDateKey, derivePackageState, fromDatabaseDate, toDatabaseDate } from '../member-packages/member-packages.dates.js';
 import type { EnrollmentsQuery } from './enrollments.validation.js';
+import { enrollmentViewSelect, toEnrollmentView } from './enrollments.mapper.js';
 
-const enrollmentInclude = {
-  member: { select: { id: true, name: true } },
-  package: { include: { packageType: { select: { id: true, name: true } } } },
-  class: { include: {
-    activity: { select: { id: true, name: true } },
-    professor: { select: { id: true, name: true } },
-    _count: { select: { enrollments: { where: { cancelled: false } } } },
-  } },
-} satisfies Prisma.EnrollmentInclude;
+const classCapacityInclude = {
+  activity: { select: { id: true, name: true } },
+  professor: { select: { id: true, name: true } },
+  _count: { select: { enrollments: { where: { cancelled: false } } } },
+} satisfies Prisma.ClassInclude;
 
 type Tx = Prisma.TransactionClient;
-type ClassForEnrollment = Prisma.ClassGetPayload<{ include: typeof enrollmentInclude.class.include }>;
+type ClassForEnrollment = Prisma.ClassGetPayload<{ include: typeof classCapacityInclude }>;
 const eligibilityPackageInclude = {
   member: { select: { id: true, name: true } },
   packageType: { select: { id: true, name: true } },
@@ -76,11 +73,7 @@ async function lockEnrollment(tx: Tx, id: number) { await tx.$queryRaw`SELECT id
 export type Eligibility = {
   canEnroll: boolean;
   message: string;
-  reason: 'CLASS_FULL' | 'CLASS_CANCELLED' | 'CLASS_STARTED' | 'ALREADY_ENROLLED' | 'NO_USABLE_PACKAGE' | null;
   reasonCode: 'CLASS_FULL' | 'CLASS_CANCELLED' | 'CLASS_STARTED' | 'ALREADY_ENROLLED' | 'NO_USABLE_PACKAGE' | null;
-  memberPackageId: number | null;
-  remainingCredits: number | null;
-  remainingCreditsAfterEnrollment: number | null;
   selectedPackage: ReturnType<typeof eligibilityPackageView> | null;
   expectedRemainingCredits: number | null;
 };
@@ -99,7 +92,7 @@ function eligibilityPackageView(row: EligibilityPackage, today: string) {
 async function loadReferences(memberId: number, classId: number) {
   const [member, klass] = await Promise.all([
     prisma.user.findUnique({ where: { id: memberId }, select: { id: true, role: true, active: true } }),
-    prisma.class.findUnique({ where: { id: classId }, include: enrollmentInclude.class.include }),
+    prisma.class.findUnique({ where: { id: classId }, include: { ...classCapacityInclude } }),
   ]);
   return { member, klass };
 }
@@ -133,8 +126,8 @@ async function packageCandidates(memberId: number, classStart: Date, todayKey: s
   });
 }
 
-function unavailable(reason: NonNullable<Eligibility['reason']>, message: string): Eligibility {
-  return { canEnroll: false, message, reason, reasonCode: reason, memberPackageId: null, remainingCredits: null, remainingCreditsAfterEnrollment: null, selectedPackage: null, expectedRemainingCredits: null };
+function unavailable(reasonCode: NonNullable<Eligibility['reasonCode']>, message: string): Eligibility {
+  return { canEnroll: false, message, reasonCode, selectedPackage: null, expectedRemainingCredits: null };
 }
 
 export async function checkEligibility(memberId: number, classId: number, now = new Date()): Promise<Eligibility> {
@@ -150,10 +143,9 @@ export async function checkEligibility(memberId: number, classId: number, now = 
   const selected = candidates[0];
   if (!selected) return unavailable('NO_USABLE_PACKAGE', 'El socio no tiene un paquete utilizable para esta clase.');
   return {
-    canEnroll: true, message: 'El socio puede inscribirse.', reason: null, reasonCode: null,
-    memberPackageId: selected.id,
-    remainingCredits: selected.remainingCredits,
-    remainingCreditsAfterEnrollment: selected.remainingCredits - 1,
+    canEnroll: true,
+    message: 'El socio puede inscribirse.',
+    reasonCode: null,
     selectedPackage: eligibilityPackageView(selected, businessDateKey(now)),
     expectedRemainingCredits: selected.remainingCredits - 1,
   };
@@ -163,7 +155,7 @@ export async function createEnrollment(memberId: number, classId: number) {
   try {
     return await serializable(async (tx) => {
       await lockClass(tx, classId);
-      const klass = await tx.class.findUnique({ where: { id: classId }, include: enrollmentInclude.class.include });
+      const klass = await tx.class.findUnique({ where: { id: classId }, include: { ...classCapacityInclude } });
       validateClassExists(klass);
       const now = new Date();
       const reason = classReason(klass, now);
@@ -205,7 +197,8 @@ export async function createEnrollment(memberId: number, classId: number) {
 
       const debit = await tx.memberPackage.updateMany({ where: { id: selected.id, memberId, remainingCredits: { gt: 0 } }, data: { remainingCredits: { decrement: 1 } } });
       if (debit.count !== 1) throw new AppError(409, 'NO_USABLE_PACKAGE', 'El paquete ya no tiene créditos disponibles.');
-      return tx.enrollment.create({ data: { classId, memberId, memberPackageId: selected.id }, include: enrollmentInclude });
+      const enrollment = await tx.enrollment.create({ data: { classId, memberId, memberPackageId: selected.id }, select: enrollmentViewSelect });
+      return toEnrollmentView(enrollment);
     });
   } catch (error) {
     if (enrollmentConflict(error)) throw new AppError(409, 'ALREADY_ENROLLED', 'El socio ya tiene una inscripción activa para esta clase.');
@@ -222,17 +215,21 @@ export async function cancelEnrollment(id: number, requesterId: number, isAdmin:
     await lockMember(tx, relation.memberId);
     await lockPackage(tx, relation.memberPackageId);
     await lockEnrollment(tx, id);
-    const row = await tx.enrollment.findUnique({ where: { id }, include: enrollmentInclude });
+    const row = await tx.enrollment.findUnique({
+      where: { id },
+      select: { id: true, memberId: true, memberPackageId: true, cancelled: true, class: { select: { startsAt: true } } },
+    });
     if (!row) throw new AppError(404, 'NOT_FOUND', 'No se encontró la inscripción.');
     if (!isAdmin && row.memberId !== requesterId) throw new AppError(403, 'FORBIDDEN', 'No tenés permisos para cancelar esta inscripción.');
     if (row.cancelled) throw new AppError(409, 'ALREADY_CANCELLED', 'La inscripción ya está cancelada.');
     if (now.getTime() > row.class.startsAt.getTime() - 2 * 60 * 60 * 1000) {
       throw new AppError(409, 'CANCELLATION_WINDOW_CLOSED', 'La inscripción solo puede cancelarse hasta dos horas antes del comienzo.');
     }
-    const cancelledAt = now;
-    const updated = await tx.enrollment.update({ where: { id }, data: { cancelled: true, cancelledAt, creditRefunded: true }, include: enrollmentInclude });
-    await tx.memberPackage.update({ where: { id: row.memberPackageId }, data: { remainingCredits: { increment: 1 } } });
-    return updated;
+    await tx.enrollment.update({ where: { id }, data: { cancelled: true, cancelledAt: now, creditRefunded: true }, select: { id: true } });
+    await tx.memberPackage.update({ where: { id: row.memberPackageId }, data: { remainingCredits: { increment: 1 } }, select: { id: true } });
+    const updated = await tx.enrollment.findUnique({ where: { id }, select: enrollmentViewSelect });
+    if (!updated) throw new AppError(500, 'INTERNAL_ERROR', 'No se pudo recuperar la inscripción actualizada.');
+    return toEnrollmentView(updated);
   });
 }
 
@@ -247,11 +244,14 @@ export async function listEnrollments(query: EnrollmentsQuery, scopedMemberId?: 
     ...(query.cancelled !== undefined ? { cancelled: query.cancelled } : {}),
     ...(Object.keys(classWhere).length ? { class: classWhere } : {}),
   };
-  const [data, total] = await prisma.$transaction([
-    prisma.enrollment.findMany({ where, include: enrollmentInclude, orderBy: [{ class: { startsAt: 'asc' } }, { id: 'asc' }], skip: (query.page - 1) * query.pageSize, take: query.pageSize }),
+  const [rows, total] = await prisma.$transaction([
+    prisma.enrollment.findMany({ where, select: enrollmentViewSelect, orderBy: [{ class: { startsAt: 'asc' } }, { id: 'asc' }], skip: (query.page - 1) * query.pageSize, take: query.pageSize }),
     prisma.enrollment.count({ where }),
   ], { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
-  return { data, meta: { page: query.page, pageSize: query.pageSize, total } };
+  return { data: rows.map(toEnrollmentView), meta: { page: query.page, pageSize: query.pageSize, total } };
 }
 
-export function findEnrollment(id: number) { return prisma.enrollment.findUnique({ where: { id }, include: enrollmentInclude }); }
+export async function findEnrollment(id: number) {
+  const row = await prisma.enrollment.findUnique({ where: { id }, select: enrollmentViewSelect });
+  return row ? toEnrollmentView(row) : null;
+}

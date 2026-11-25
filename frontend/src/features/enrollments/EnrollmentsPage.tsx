@@ -97,7 +97,7 @@ export function EnrollmentsPage() {
       {result.data && !result.error && (result.data.data.length ? <div className="table-scroll" aria-busy={result.loading}>
         <table><caption className="sr-only">{heading}</caption><thead><tr>{isAdmin && <th>Socio</th>}<th>Actividad y horario</th><th>Profesor</th><th>Paquete utilizado</th><th>Inscripción</th><th>Asistencia</th><th>Detalle</th></tr></thead>
           <tbody>{result.data.data.map((item) => <tr key={item.id}>
-            {isAdmin && <td>{item.member.name}</td>}<td><strong>{item.class.activity.name}</strong><br />{formatBuenosAires(item.class.startsAt)} – {formatBuenosAires(item.class.endsAt, false)}</td><td>{item.class.professor.name}</td><td>{item.package.packageType.name} · {item.package.remainingCredits} créditos actuales</td>
+            {isAdmin && <td>{item.member.name}</td>}<td><strong>{item.class.activity.name}</strong><br />{formatBuenosAires(item.class.startsAt)} – {formatBuenosAires(item.class.endsAt, false)}</td><td>{item.class.professor.name}</td><td>{item.memberPackage.packageType.name} · {item.memberPackage.remainingCredits} créditos actuales</td>
             <td>{item.cancelled ? 'Cancelada' : 'Activa'}</td><td>{attendanceLabel(item.attendanceStatus)}</td><td><Link className="text-link" aria-label={`Ver inscripción de ${item.member.name} para ${item.class.activity.name}`} to={`${basePath}/${item.id}`}>Ver detalle</Link></td>
           </tr>)}</tbody>
         </table>

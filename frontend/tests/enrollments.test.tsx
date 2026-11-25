@@ -13,13 +13,19 @@ const professor = { id: 8, name: 'Profesor Inscripciones', email: 'professor@enr
 const activity = { id: 3, name: 'Yoga' };
 const gymClass = { id: 42, activity, professor: { id: professor.id, name: professor.name }, startsAt: '2030-02-03T15:00:00.000Z', endsAt: '2030-02-03T16:00:00.000Z', capacity: 10, occupiedSpots: 1, availableSpots: 9, cancelled: false, status: 'SCHEDULED' };
 const packageInfo = { id: 51, packageType: { id: 6, name: 'Plan mensual' }, startsOn: '2030-02-01', expiresOn: '2030-03-02', initialCredits: 8, remainingCredits: 4, assignedAt: '2030-02-01T12:00:00.000Z' };
-const eligibility = { canEnroll: true, message: 'El socio puede inscribirse.', reason: null, memberPackageId: 51, packageTypeName: 'Plan mensual', remainingCredits: 4, remainingCreditsAfterEnrollment: 3 };
+const eligibility = {
+  canEnroll: true,
+  reasonCode: null,
+  message: 'El socio puede inscribirse.',
+  selectedPackage: { ...packageInfo, member: { id: member.id, name: member.name } },
+  expectedRemainingCredits: 3,
+};
 const enrollment: EnrollmentRecord = {
   id: 71, memberId: member.id, classId: gymClass.id, memberPackageId: packageInfo.id, cancelled: false,
   cancelledAt: null, creditRefunded: false, attendanceStatus: 'PENDING', attendanceRecordedBy: null,
   attendanceRecordedAt: null, createdAt: '2030-02-01T12:00:00.000Z', member: { id: member.id, name: member.name },
-  package: packageInfo,
-  class: { id: gymClass.id, startsAt: gymClass.startsAt, endsAt: gymClass.endsAt, capacity: gymClass.capacity, cancelled: false, activity, professor: gymClass.professor, _count: { enrollments: 1 } },
+  memberPackage: { packageType: packageInfo.packageType, remainingCredits: packageInfo.remainingCredits },
+  class: { startsAt: gymClass.startsAt, endsAt: gymClass.endsAt, cancelled: false, activity, professor: gymClass.professor },
 };
 
 const response = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
@@ -39,7 +45,7 @@ function installFetch(role: Role, options: MockOptions = {}) {
     if (path.endsWith('/eligibility')) return options.eligibility?.(url) ?? response({ data: eligibility });
     if (path.endsWith('/enrollments') || /\/enrollments\/\d+(?:\/cancel)?$/.test(path)) {
       if (options.enrollments) return options.enrollments(url, init);
-      if (method === 'POST' && path.endsWith('/cancel')) return response({ data: { ...enrollment, cancelled: true, cancelledAt: '2030-02-03T12:00:00.000Z', creditRefunded: true } });
+      if (method === 'POST' && path.endsWith('/cancel')) return response({ data: { ...enrollment, cancelled: true, cancelledAt: '2030-02-03T12:00:00.000Z', creditRefunded: true, memberPackage: { ...enrollment.memberPackage, remainingCredits: enrollment.memberPackage.remainingCredits + 1 } } });
       if (method === 'POST') return response({ data: enrollment }, 201);
       if (/\/enrollments\/\d+$/.test(path)) return response({ data: enrollment });
       return response(page([enrollment]));
@@ -116,10 +122,10 @@ describe('frontend de inscripciones HU-24 a HU-26', () => {
     expect(fetcher.mock.calls.some(([input, init]) => new URL(String(input)).pathname.endsWith('/enrollments') && init?.method === 'POST')).toBe(false);
   });
 
-  it('normaliza la respuesta de elegibilidad documentada como compatibilidad', async () => {
+  it('normaliza la respuesta de elegibilidad canónica', async () => {
     installFetch(member, { eligibility: () => response({ data: {
       canEnroll: true, message: 'El socio puede inscribirse.', reasonCode: null,
-      selectedPackage: { id: 51, packageType: { name: 'Plan mensual' }, remainingCredits: 4 }, expectedRemainingCredits: 3,
+      selectedPackage: { ...packageInfo, member: { id: member.id, name: member.name } }, expectedRemainingCredits: 3,
     } }) });
     await enterAs(member, '/socio/clases/42');
     expect(await screen.findByText('Plan mensual')).toBeInTheDocument();
@@ -151,7 +157,7 @@ describe('frontend de inscripciones HU-24 a HU-26', () => {
     ['ALREADY_ENROLLED', 'El socio ya tiene una inscripción activa para esta clase.'],
     ['NO_USABLE_PACKAGE', 'El socio no tiene un paquete utilizable para esta clase.'],
   ])('muestra elegibilidad negativa %s sin acción de inscripción', async (reason, message) => {
-    installFetch(member, { eligibility: () => response({ data: { canEnroll: false, reason, message } }) });
+    installFetch(member, { eligibility: () => response({ data: { canEnroll: false, reasonCode: reason, message, selectedPackage: null, expectedRemainingCredits: null } }) });
     await enterAs(member, '/socio/clases/42');
     expect(await screen.findByText(message)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Inscribirme' })).not.toBeInTheDocument();
@@ -324,7 +330,7 @@ describe('frontend de inscripciones HU-24 a HU-26', () => {
   });
 
   it('muestra el estado de éxito y la ausencia de acciones para inscripciones canceladas', async () => {
-    installFetch(member, { enrollments: (url) => response({ data: { ...enrollment, cancelled: true, cancelledAt: '2030-02-02T12:00:00.000Z' } }) });
+    installFetch(member, { enrollments: (url) => response({ data: { ...enrollment, cancelled: true, cancelledAt: '2030-02-02T12:00:00.000Z', memberPackage: { ...enrollment.memberPackage, remainingCredits: enrollment.memberPackage.remainingCredits + 1 } } }) });
     await enterAs(member, '/socio/inscripciones/71');
     expect(await screen.findByText('Cancelada')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Cancelar inscripción/ })).not.toBeInTheDocument();

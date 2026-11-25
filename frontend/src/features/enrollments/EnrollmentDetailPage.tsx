@@ -53,7 +53,7 @@ export function EnrollmentDetailPage() {
       {isAdmin && <div><dt>Socio</dt><dd>{enrollment.member.name}</dd></div>}
       <div><dt>Actividad</dt><dd>{enrollment.class.activity.name}</dd></div><div><dt>Profesor</dt><dd>{enrollment.class.professor.name}</dd></div>
       <div><dt>Inicio</dt><dd>{formatBuenosAires(enrollment.class.startsAt)}</dd></div><div><dt>Finalización</dt><dd>{formatBuenosAires(enrollment.class.endsAt)}</dd></div>
-      <div><dt>Paquete utilizado</dt><dd>{enrollment.package.packageType.name} (#{enrollment.memberPackageId})</dd></div>
+      <div><dt>Paquete utilizado</dt><dd>{enrollment.memberPackage.packageType.name} (#{enrollment.memberPackageId})</dd></div>
       <div><dt>Estado de inscripción</dt><dd>{enrollment.cancelled ? 'Cancelada' : 'Activa'}</dd></div>
       <div><dt>Asistencia</dt><dd>{attendanceLabel(enrollment.attendanceStatus)}</dd></div>
       {enrollment.cancelledAt && <div><dt>Cancelada el</dt><dd>{formatBuenosAires(enrollment.cancelledAt)}</dd></div>}

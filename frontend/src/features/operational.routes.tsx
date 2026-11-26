@@ -11,6 +11,9 @@ import { PackageTypeFormPage } from './packages/PackageTypeFormPage.js';
 import { MemberPackagesPage } from './packages/MemberPackagesPage.js';
 import { MemberPackageAssignPage } from './packages/MemberPackageAssignPage.js';
 import { MemberPackageDetailPage } from './packages/MemberPackageDetailPage.js';
+import { EnrollmentsPage } from './enrollments/EnrollmentsPage.js';
+import { EnrollmentCreatePage } from './enrollments/EnrollmentCreatePage.js';
+import { EnrollmentDetailPage } from './enrollments/EnrollmentDetailPage.js';
 
 /** Emilia agrega aquí SU navegación y pantallas sin editar AppLayout ni App.tsx. */
 export const operationalNavigation: NavigationEntry[] = [
@@ -44,6 +47,16 @@ export const operationalNavigation: NavigationEntry[] = [
     label: 'Mis paquetes',
     roles: ['MEMBER'],
   },
+  {
+    path: '/admin/inscripciones',
+    label: 'Inscripciones',
+    roles: ['ADMIN'],
+  },
+  {
+    path: '/socio/inscripciones',
+    label: 'Mis inscripciones',
+    roles: ['MEMBER'],
+  },
 ];
 
 function PendingOperations() {
@@ -63,6 +76,9 @@ export function OperationalRoutes() {
         <Route path="/admin/paquetes" element={<MemberPackagesPage />} />
         <Route path="/admin/paquetes/asignar" element={<MemberPackageAssignPage />} />
         <Route path="/admin/paquetes/:id" element={<MemberPackageDetailPage />} />
+        <Route path="/admin/inscripciones" element={<EnrollmentsPage />} />
+        <Route path="/admin/inscripciones/nueva" element={<EnrollmentCreatePage />} />
+        <Route path="/admin/inscripciones/:id" element={<EnrollmentDetailPage />} />
         <Route path="/admin/clases" element={<ClassesPage />} />
         <Route path="/admin/clases/nueva" element={<ClassFormPage />} />
         <Route path="/admin/clases/:id/editar" element={<ClassFormPage editing />} />
@@ -73,6 +89,8 @@ export function OperationalRoutes() {
       <Route element={<RequireRole roles={['MEMBER']} />}>
         <Route path="/socio/paquetes" element={<MemberPackagesPage />} />
         <Route path="/socio/paquetes/:id" element={<MemberPackageDetailPage />} />
+        <Route path="/socio/inscripciones" element={<EnrollmentsPage />} />
+        <Route path="/socio/inscripciones/:id" element={<EnrollmentDetailPage />} />
         <Route path="/socio/clases" element={<ClassesPage />} />
         <Route path="/socio/clases/:id" element={<ClassDetailPage />} />
         <Route path="/socio/*" element={<PendingOperations />} />

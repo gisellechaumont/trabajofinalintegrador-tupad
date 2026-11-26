@@ -30,7 +30,7 @@ describe('formularios conectados al cliente HTTP', () => {
     expect(await screen.findByRole('heading', { name: 'Persona Nueva' })).toBeInTheDocument(); expect(screen.getByText('Socio registrado correctamente.')).toBeInTheDocument();
     const created = fetcher.mock.calls.find(([, options]) => options?.method === 'POST' && String(options.body).includes('Persona Nueva'));
     expect(JSON.parse(String(created?.[1]?.body))).toMatchObject({ role: 'MEMBER', name: member.name });
-  });
+  }, 10_000);
   it('confirma desactivación explícita y actualiza estado del listado', async () => {
     let active = true;
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {

@@ -3640,7 +3640,7 @@
           "ADMIN",
           "MEMBER"
         ],
-        "description": "MEMBER solo propias. Orden por inicio de clase,id. from/to filtran inicio de clase. ADMIN puede asistir a socios.",
+        "description": "ADMIN puede filtrar por memberId y classId; MEMBER siempre queda limitado a sus propias inscripciones, aunque envíe otro memberId. Filtros: cancelled, from inclusivo y to exclusivo sobre el inicio de la clase. Orden por inicio de clase e id; filtros y total se aplican antes de paginar.",
         "responses": {
           "200": {
             "description": "Operación completada",
@@ -3849,8 +3849,17 @@
                 "example": {
                   "data": {
                     "id": 1,
+                    "classId": 42,
+                    "memberId": 3,
+                    "memberPackageId": 51,
+                    "member": {
+                      "id": 3,
+                      "name": "Juan Member"
+                    },
                     "class": {
-                      "id": 1,
+                      "startsAt": "2030-02-04T15:00:00Z",
+                      "endsAt": "2030-02-04T16:00:00Z",
+                      "cancelled": false,
                       "activity": {
                         "id": 1,
                         "name": "Yoga"
@@ -3858,20 +3867,15 @@
                       "professor": {
                         "id": 2,
                         "name": "Ana Professor"
+                      }
+                    },
+                    "memberPackage": {
+                      "packageType": {
+                        "id": 6,
+                        "name": "Mensual"
                       },
-                      "startsAt": "2030-02-04T15:00:00Z",
-                      "endsAt": "2030-02-04T16:00:00Z",
-                      "capacity": 12,
-                      "occupiedSpots": 1,
-                      "availableSpots": 11,
-                      "cancelled": false,
-                      "status": "SCHEDULED"
+                      "remainingCredits": 4
                     },
-                    "member": {
-                      "id": 3,
-                      "name": "Juan Member"
-                    },
-                    "memberPackageId": 1,
                     "cancelled": false,
                     "createdAt": "2026-11-03T15:00:00Z",
                     "cancelledAt": null,
@@ -4102,7 +4106,7 @@
           "ADMIN",
           "MEMBER"
         ],
-        "description": "Socio propietario o ADMIN. now<=startsAt-2h acepta; posterior 409 sin modificar. Devolución al paquete original sin extender vencimiento. Repetición: 409 ALREADY_CANCELLED sin doble devolución.",
+        "description": "Socio propietario o ADMIN. now<=startsAt-2h acepta; posterior 409 sin modificar. Devuelve el crédito al paquete original sin extender su vencimiento. La respuesta incluye memberPackage.remainingCredits ya reintegrado. Repetición: 409 ALREADY_CANCELLED sin doble devolución.",
         "responses": {
           "200": {
             "description": "Operación completada",
@@ -4789,15 +4793,26 @@
             "type": "integer",
             "minimum": 1
           },
-          "class": {
-            "$ref": "#/components/schemas/Class"
+          "classId": {
+            "type": "integer",
+            "minimum": 1
           },
-          "member": {
-            "$ref": "#/components/schemas/PersonRef"
+          "memberId": {
+            "type": "integer",
+            "minimum": 1
           },
           "memberPackageId": {
             "type": "integer",
             "minimum": 1
+          },
+          "member": {
+            "$ref": "#/components/schemas/PersonRef"
+          },
+          "class": {
+            "$ref": "#/components/schemas/EnrollmentClassSummary"
+          },
+          "memberPackage": {
+            "$ref": "#/components/schemas/EnrollmentMemberPackageSummary"
           },
           "cancelled": {
             "type": "boolean"
@@ -4830,9 +4845,12 @@
         },
         "required": [
           "id",
-          "class",
-          "member",
+          "classId",
+          "memberId",
           "memberPackageId",
+          "member",
+          "class",
+          "memberPackage",
           "cancelled",
           "createdAt",
           "cancelledAt",
@@ -4840,6 +4858,53 @@
           "attendanceStatus",
           "attendanceRecordedBy",
           "attendanceRecordedAt"
+        ]
+      },
+      "EnrollmentClassSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "cancelled": {
+            "type": "boolean"
+          },
+          "activity": {
+            "$ref": "#/components/schemas/NamedRef"
+          },
+          "professor": {
+            "$ref": "#/components/schemas/PersonRef"
+          }
+        },
+        "required": [
+          "startsAt",
+          "endsAt",
+          "cancelled",
+          "activity",
+          "professor"
+        ]
+      },
+      "EnrollmentMemberPackageSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "packageType": {
+            "$ref": "#/components/schemas/NamedRef"
+          },
+          "remainingCredits": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "packageType",
+          "remainingCredits"
         ]
       },
       "RosterEntry": {
@@ -4944,6 +5009,14 @@
           },
           "reasonCode": {
             "type": "string",
+            "enum": [
+              "CLASS_FULL",
+              "CLASS_CANCELLED",
+              "CLASS_STARTED",
+              "ALREADY_ENROLLED",
+              "NO_USABLE_PACKAGE",
+              null
+            ],
             "nullable": true
           },
           "message": {

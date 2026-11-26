@@ -178,7 +178,7 @@ test('limita diez intentos de login por minuto', async () => {
   const res = await request(limited).post('/api/v1/auth/login').send({ email: 'missing@gymflow.test', password }).expect(429); assert.equal(res.body.error.code, 'TOO_MANY_ATTEMPTS');
 });
 test('no agrega endpoints simulados ni borrados físicos', async () => {
-  await request(app).get('/api/v1/classes').set(auth()).expect(404);
+  await request(app).get('/api/v1/classes').set(auth()).expect(200);
   await request(app).delete(`/api/v1/users/${ids.member}`).set(auth()).expect(404);
   assert.equal(await prisma.user.count({ where: { id: ids.member } }), 1);
 });

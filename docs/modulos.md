@@ -383,9 +383,11 @@ Gestionar la reserva y cancelación de clases, asegurando la integridad de los c
 * Descontar un crédito al confirmar la inscripción.
 * Cancelar una inscripción.
 * Liberar el cupo.
-* Devolver el crédito cuando la cancelación se realiza con al menos dos horas de anticipación.
-* Evitar la devolución del crédito cuando la cancelación es tardía o el socio se ausenta.
-* Permitir la gestión administrativa de inscripciones.
+* Permitir cancelar hasta dos horas antes del inicio, inclusive; exactamente dos horas antes todavía está dentro del plazo.
+* En una cancelación válida, liberar el cupo y devolver un crédito al paquete utilizado.
+* Rechazar una cancelación posterior al límite sin cancelar la inscripción, liberar el cupo ni devolver el crédito; una ausencia tampoco devuelve el crédito.
+* Permitir que ADMIN gestione inscripciones y cancelaciones de cualquier socio, sujeto a la misma ventana de cancelación.
+* Permitir que MEMBER gestione únicamente sus propias inscripciones; PROFESSOR no crea ni cancela inscripciones.
 * Mantener el historial de reservas y cancelaciones.
 
 La inscripción y el descuento del crédito deben realizarse dentro de una misma transacción. Del mismo modo, una cancelación válida y la devolución del crédito deben confirmarse juntas.
@@ -415,11 +417,12 @@ La inscripción y el descuento del crédito deben realizarse dentro de una misma
 * Se descuenta exactamente un crédito cuando la inscripción queda confirmada.
 * La inscripción registra qué paquete fue utilizado.
 * Si la operación falla, no se conserva la inscripción ni se descuenta el crédito.
-* Una cancelación realizada con al menos dos horas de anticipación libera el cupo y devuelve el crédito.
-* Una cancelación tardía libera el cupo, pero no devuelve el crédito.
+* Una cancelación realizada hasta dos horas antes, inclusive, libera el cupo y devuelve el crédito al paquete utilizado.
+* Una cancelación posterior al límite se rechaza sin cancelar la inscripción, liberar el cupo ni devolver el crédito.
 * La ausencia del socio no devuelve el crédito.
 * La repetición de una solicitud de cancelación no produce una segunda devolución.
 * El socio solo puede gestionar sus propias inscripciones.
+* ADMIN puede gestionar inscripciones de cualquier socio; PROFESSOR no puede crear ni cancelar inscripciones.
 
 #### Exclusiones
 
@@ -566,8 +569,8 @@ El módulo utiliza consultas agregadas sobre:
 | Gestionar tipos de paquetes        |                        Sí |               No |         No |
 | Asignar paquetes                   |                        Sí |               No |         No |
 | Consultar paquetes                 |                     Todos |               No |    Propios |
-| Crear inscripciones                | Asistencia administrativa |               No |    Propias |
-| Cancelar inscripciones             | Asistencia administrativa |               No |    Propias |
+| Crear inscripciones                | Para cualquier socio      |               No |    Propias |
+| Cancelar inscripciones             | Para cualquier socio      |               No |    Propias |
 | Consultar lista de inscriptos      |                     Todas | Clases asignadas |         No |
 | Registrar asistencia               |                     Todas | Clases asignadas |         No |
 | Consultar historial                |                     Todos | Clases asignadas |     Propio |

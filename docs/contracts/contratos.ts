@@ -22,14 +22,23 @@ export interface MemberPackage {
   startsOn: ISODate; expiresOn: ISODate; initialCredits: number;
   remainingCredits: number; assignedAt: ISOInstant; status: PackageStatus; expiringSoon: boolean;
 }
+export interface EnrollmentClassSummary {
+  startsAt: ISOInstant; endsAt: ISOInstant; cancelled: boolean;
+  activity: { id: number; name: string }; professor: PersonRef;
+}
+export interface EnrollmentMemberPackageSummary {
+  packageType: { id: number; name: string }; remainingCredits: number;
+}
 export interface Enrollment {
-  id: number; class: ClassView; member: PersonRef; memberPackageId: number;
+  id: number; classId: number; memberId: number; memberPackageId: number;
+  member: PersonRef; class: EnrollmentClassSummary; memberPackage: EnrollmentMemberPackageSummary;
   cancelled: boolean; createdAt: ISOInstant; cancelledAt: ISOInstant | null;
   creditRefunded: boolean; attendanceStatus: AttendanceStatus;
   attendanceRecordedBy: number | null; attendanceRecordedAt: ISOInstant | null;
 }
+export type EligibilityReasonCode = 'CLASS_FULL' | 'CLASS_CANCELLED' | 'CLASS_STARTED' | 'ALREADY_ENROLLED' | 'NO_USABLE_PACKAGE';
 export interface Eligibility {
-  canEnroll: boolean; reasonCode: string | null; message: string;
+  canEnroll: boolean; reasonCode: EligibilityReasonCode | null; message: string;
   selectedPackage: MemberPackage | null; expectedRemainingCredits: number | null;
 }
 export interface RosterEntry {
@@ -73,6 +82,18 @@ export interface PackageTypesQuery { page?: number; pageSize?: number; search?: 
 export interface PackageAssignment { memberId: number; packageTypeId: number; startsOn: ISODate }
 export interface MemberPackagesQuery { page?: number; pageSize?: number; memberId?: number; status?: PackageStatus; expiringSoon?: boolean }
 export interface EnrollmentInput { classId: number; memberId?: number } // memberId: ADMIN o id propio.
+/** Filtros implementados; from incluye y to excluye el inicio de la clase. */
+export interface EnrollmentsQuery {
+  /** page inicia en 1; pageSize inicia en 20 y admite hasta 100. */
+  page?: number;
+  pageSize?: number;
+  memberId?: number;
+  classId?: number;
+  cancelled?: boolean;
+  /** Instantes RFC3339 con offset y, si se envían ambos, to debe ser posterior a from. */
+  from?: ISOInstant;
+  to?: ISOInstant;
+}
 
 /** Solo interfaz lógica. La implementación se prepara en la base compartida. */
 export interface HttpClient {

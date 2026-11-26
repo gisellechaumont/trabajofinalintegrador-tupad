@@ -68,7 +68,7 @@ Gestiona usuarios, actividades, clases, paquetes, inscripciones y asistencias. N
 
 ### 4.2. Profesor
 
-Consulta el calendario general y sus clases asignadas. Registra y corrige la asistencia de las personas inscriptas en las clases que dicta.
+Consulta en modo de solo lectura el calendario general y el detalle básico de cualquier clase. Solo consulta la lista de inscriptos y registra o corrige asistencia en las clases que tiene asignadas.
 
 ### 4.3. Socio
 
@@ -180,7 +180,7 @@ El panel también podrá incluir accesos rápidos para crear un usuario, program
 | PROF-04 | Detalle de clase y asistencia | Registrar la asistencia | Datos de la clase, inscriptos, créditos disponibles y estados de asistencia |
 | PROF-05 | Historial de clases | Consultar clases dictadas | Fecha, actividad, cantidad de inscriptos y resumen de asistencia |
 
-El profesor podrá consultar todas las clases del calendario, pero solo podrá registrar o modificar la asistencia de las clases que tenga asignadas.
+El profesor podrá consultar todas las clases del calendario en modo de solo lectura, pero solo podrá consultar sus listas de inscriptos y registrar o modificar la asistencia de las clases que tenga asignadas.
 
 #### Flujo de registro de asistencia
 
@@ -249,7 +249,7 @@ flowchart TD
     B -->|No| G[Informar que no puede cancelarse]
 ```
 
-El mensaje de rechazo deberá indicar claramente que las cancelaciones se permiten hasta dos horas antes del inicio de la clase.
+La cancelación se permite hasta dos horas antes del inicio, inclusive: exactamente dos horas antes todavía se acepta. Si se solicita después de ese límite, el sistema la rechaza sin cancelar la inscripción, liberar el cupo ni devolver el crédito. El mensaje de rechazo deberá indicar claramente el límite.
 
 ### 7.3. Cancelación de una clase
 

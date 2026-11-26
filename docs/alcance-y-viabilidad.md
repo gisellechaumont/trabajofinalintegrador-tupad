@@ -29,11 +29,11 @@ Para garantizar la viabilidad y calidad en los plazos estipulados, quedan fuera 
 * **RN-01:** Un usuario debe estar activo y autenticado para operar en el sistema.
 * **RN-02:** Cada usuario opera estrictamente según los permisos asignados a su rol.
 * **RN-03:** Solo el Administrador puede dar de alta usuarios, planes y programar clases.
-* **RN-04:** El Profesor solo puede visualizar y registrar asistencia en las clases que tiene asignadas.
-* **RN-05:** El Socio únicamente puede consultar y modificar sus propias reservas y estado del paquete.
+* **RN-04:** El Profesor puede consultar en modo de solo lectura la agenda general y el detalle básico de cualquier clase. Solo puede consultar inscriptos y registrar asistencia en las clases que tiene asignadas.
+* **RN-05:** El Socio puede gestionar únicamente sus propias inscripciones y consultar el estado de sus paquetes. No puede modificar paquetes ni saldos.
 * **RN-06:** No se permite la inscripción duplicada de un socio en una misma clase.
 * **RN-07:** Una clase no puede superar su cupo máximo configurado.
-* **RN-08:** Al cancelarse una inscripción válida, el cupo queda inmediatamente liberado.
+* **RN-08:** Una cancelación individual se permite hasta dos horas antes del inicio, inclusive. Una cancelación válida libera el cupo y devuelve el crédito; después del límite se rechaza sin cancelar la inscripción, liberar el cupo ni devolver el crédito.
 * **RN-09:** Para realizar una inscripción, el socio debe contar con un paquete activo y clases disponibles.
 * **RN-10:** La asistencia sólo puede registrarse para socios debidamente inscriptos en la clase.
 * **RN-11:** Todas las validaciones de negocio críticas se ejecutan y resuelven en el backend.

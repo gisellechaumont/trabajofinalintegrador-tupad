@@ -60,7 +60,7 @@ La documentación completa del proyecto se encuentra en la carpeta [`docs`](docs
 GymFlow es un trabajo integrador desarrollado de forma modular en equipo. El repositorio organiza el alcance funcional en dos bloques de trabajo:
 
 - **Módulo de Administración, Seguridad y Base Compartida:** Arquitectura base del sistema, persistencia relacional con PostgreSQL y Prisma, autenticación JWT/Argon2id, control de acceso por roles, gestión integral de socios, profesores y catálogo de actividades (ARQ-03/04, TEC-03 a TEC-08 y HU-01 a HU-12).
-- **Módulo Operativo:** Clases y cupos (HU-13 a HU-17), y paquetes —tipos, asignaciones y consulta (HU-18 a HU-23)— ya están integrados. Inscripciones, asistencias, historiales y panel (HU-24 a HU-32) permanecen pendientes. Los puntos de montaje en `operational.routes` del backend y del frontend permiten integrar esos módulos pendientes de forma desacoplada.
+- **Módulo Operativo:** Clases y cupos (HU-13 a HU-17), paquetes —tipos, asignaciones y consulta (HU-18 a HU-23)— e inscripciones y cancelaciones (HU-24 a HU-26) ya están integrados. Asistencias, historiales y panel (HU-27 a HU-32) permanecen pendientes. Los puntos de montaje en `operational.routes` del backend y del frontend permiten integrar esos módulos pendientes de forma desacoplada.
 
 ---
 

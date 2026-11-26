@@ -334,11 +334,15 @@ Se considera próximo a vencer un paquete al que le queda una semana para utiliz
 * Solo el administrador puede crear tipos de paquetes o asignarlos.
 * El socio al que se asigna el paquete debe existir, estar activo y tener rol de socio.
 * La cantidad inicial de créditos debe ser mayor que cero.
-* La fecha de vencimiento debe ser posterior a la fecha de inicio.
+* La fecha de vencimiento debe ser igual o posterior a la fecha de inicio: `expiresOn = startsOn + durationDays - 1` días calendario. Con duración 1, el paquete inicia y vence el mismo día.
 * El saldo nunca puede ser negativo.
 * Un socio puede tener varios paquetes activos.
 * Un socio puede consultar únicamente sus propios paquetes.
-* Los paquetes próximos a vencer se identifican considerando el período de una semana definido.
+* Prioridad de estados derivados: `NOT_STARTED → EXPIRED → EXHAUSTED → ACTIVE`.
+* `expiringSoon=true` filtra paquetes `ACTIVE` con vencimiento entre hoy y los próximos 7 días inclusive; `false` filtra el complemento y, si se omite, no se aplica ese filtro.
+* `daysUntilExpiration` es interno y no forma parte de la respuesta.
+* Los snapshots de una asignación son créditos y fechas; el nombre mostrado se obtiene del tipo de paquete actual.
+* No se implementan eliminación física, renovación ni modificación manual del saldo.
 
 #### Exclusiones
 

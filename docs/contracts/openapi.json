@@ -195,36 +195,6 @@
               }
             }
           },
-          "404": {
-            "description": "Recurso inexistente",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflicto de negocio o estado",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Campos inválidos",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
           "500": {
             "description": "Error interno sin detalles",
             "content": {
@@ -578,7 +548,7 @@
             "name": "page",
             "in": "query",
             "required": false,
-            "description": "",
+            "description": "Página solicitada; predeterminado 1.",
             "schema": {
               "type": "integer",
               "minimum": 1,
@@ -589,7 +559,7 @@
             "name": "pageSize",
             "in": "query",
             "required": false,
-            "description": "",
+            "description": "Tamaño de página; predeterminado 20 y máximo 100.",
             "schema": {
               "type": "integer",
               "minimum": 1,
@@ -601,7 +571,7 @@
             "name": "search",
             "in": "query",
             "required": false,
-            "description": "Búsqueda por nombre; usuarios también por correo. No altera permisos.",
+            "description": "Búsqueda de nombre insensible a mayúsculas/minúsculas.",
             "schema": {
               "type": "string",
               "maxLength": 120
@@ -611,7 +581,7 @@
             "name": "role",
             "in": "query",
             "required": false,
-            "description": "",
+            "description": "Filtra por estado activo o inactivo.",
             "schema": {
               "type": "string",
               "enum": [
@@ -2801,7 +2771,7 @@
         "x-roles": [
           "ADMIN"
         ],
-        "description": "",
+        "description": "Solo ADMIN. Busca por nombre sin distinguir mayúsculas/minúsculas; admite filtro active y paginación page (predeterminado 1) y pageSize (predeterminado 20, máximo 100). Orden estable por id ascendente. Consulta inválida: 400 INVALID_REQUEST; autenticación: 401 INVALID_SESSION; autorización: 403 FORBIDDEN.",
         "responses": {
           "200": {
             "description": "Operación completada",
@@ -2859,36 +2829,6 @@
               }
             }
           },
-          "404": {
-            "description": "Recurso inexistente",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflicto de negocio o estado",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Campos inválidos",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
           "500": {
             "description": "Error interno sin detalles",
             "content": {
@@ -2908,7 +2848,7 @@
             "name": "page",
             "in": "query",
             "required": false,
-            "description": "",
+            "description": "Página solicitada; predeterminado 1.",
             "schema": {
               "type": "integer",
               "minimum": 1,
@@ -2919,7 +2859,7 @@
             "name": "pageSize",
             "in": "query",
             "required": false,
-            "description": "",
+            "description": "Tamaño de página; predeterminado 20 y máximo 100.",
             "schema": {
               "type": "integer",
               "minimum": 1,
@@ -2931,7 +2871,7 @@
             "name": "search",
             "in": "query",
             "required": false,
-            "description": "Búsqueda por nombre; usuarios también por correo. No altera permisos.",
+            "description": "Busca tipos de paquete por nombre, sin distinguir mayúsculas de minúsculas.",
             "schema": {
               "type": "string",
               "maxLength": 120
@@ -2941,7 +2881,7 @@
             "name": "active",
             "in": "query",
             "required": false,
-            "description": "",
+            "description": "Filtra por estado activo o inactivo.",
             "schema": {
               "type": "boolean"
             }
@@ -2958,7 +2898,7 @@
         "x-roles": [
           "ADMIN"
         ],
-        "description": "",
+        "description": "Solo ADMIN. El body es estricto y no admite active; el servidor recorta name y crea el tipo activo. name es único por lower(btrim(name)); colisión: PACKAGE_TYPE_NAME_CONFLICT. Errores generales: INVALID_REQUEST, INVALID_SESSION, FORBIDDEN y VALIDATION_ERROR. No existe eliminación física.",
         "responses": {
           "201": {
             "description": "Operación completada",
@@ -3009,16 +2949,6 @@
               }
             }
           },
-          "404": {
-            "description": "Recurso inexistente",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
           "409": {
             "description": "Conflicto de negocio o estado",
             "content": {
@@ -3031,6 +2961,16 @@
           },
           "422": {
             "description": "Campos inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "REQUEST_TOO_LARGE: el body JSON supera el límite permitido.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3076,7 +3016,7 @@
         "x-roles": [
           "ADMIN"
         ],
-        "description": "",
+        "description": "Solo ADMIN. ID inexistente: 404 PACKAGE_TYPE_NOT_FOUND.",
         "responses": {
           "200": {
             "description": "Operación completada",
@@ -3129,26 +3069,6 @@
           },
           "404": {
             "description": "Recurso inexistente",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflicto de negocio o estado",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Campos inválidos",
             "content": {
               "application/json": {
                 "schema": {
@@ -3193,7 +3113,7 @@
         "x-roles": [
           "ADMIN"
         ],
-        "description": "Sin recalcular asignaciones existentes. Inactivo impide nuevas asignaciones, no consume ni invalida créditos entregados.",
+        "description": "Solo ADMIN. PATCH parcial no vacío de name, classCredits, durationDays o active. ID inexistente: 404 PACKAGE_TYPE_NOT_FOUND. La unicidad del nombre usa lower(btrim(name)); colisión: 409 PACKAGE_TYPE_NAME_CONFLICT. Sin recalcular asignaciones existentes. Inactivo impide nuevas asignaciones, pero no modifica asignaciones existentes.",
         "responses": {
           "200": {
             "description": "Operación completada",
@@ -3266,6 +3186,16 @@
           },
           "422": {
             "description": "Campos inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "REQUEST_TOO_LARGE: el body JSON supera el límite permitido.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3323,7 +3253,7 @@
           "ADMIN",
           "MEMBER"
         ],
-        "description": "MEMBER solo propios. Orden expiresOn,assignedAt,id. expiringSoon=true: vigentes con saldo y entre cero y siete días hasta vencer, inclusive.",
+        "description": "ADMIN consulta todas las asignaciones y puede filtrar por socio. MEMBER queda forzado a su propia identidad aunque envíe memberId; PROFESSOR no tiene acceso. Filtros se aplican antes de paginar. Orden expiresOn, assignedAt e id ascendente. Estados con prioridad NOT_STARTED → EXPIRED → EXHAUSTED → ACTIVE. expiringSoon=true selecciona ACTIVE con vencimiento entre hoy y siete días inclusive; false selecciona el complemento; omitido no filtra. daysUntilExpiration es interno y no se expone.",
         "responses": {
           "200": {
             "description": "Operación completada",
@@ -3381,36 +3311,6 @@
               }
             }
           },
-          "404": {
-            "description": "Recurso inexistente",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflicto de negocio o estado",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Campos inválidos",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
           "500": {
             "description": "Error interno sin detalles",
             "content": {
@@ -3431,7 +3331,7 @@
             "name": "page",
             "in": "query",
             "required": false,
-            "description": "",
+            "description": "Página solicitada; predeterminado 1.",
             "schema": {
               "type": "integer",
               "minimum": 1,
@@ -3442,7 +3342,7 @@
             "name": "pageSize",
             "in": "query",
             "required": false,
-            "description": "",
+            "description": "Tamaño de página; predeterminado 20 y máximo 100.",
             "schema": {
               "type": "integer",
               "minimum": 1,
@@ -3454,7 +3354,7 @@
             "name": "memberId",
             "in": "query",
             "required": false,
-            "description": "",
+            "description": "ADMIN: filtra por socio. MEMBER: se ignora como criterio de autorización y la consulta siempre queda limitada a la identidad autenticada.",
             "schema": {
               "type": "integer",
               "minimum": 1
@@ -3464,7 +3364,7 @@
             "name": "status",
             "in": "query",
             "required": false,
-            "description": "",
+            "description": "Filtra por estado derivado NOT_STARTED, ACTIVE, EXHAUSTED o EXPIRED.",
             "schema": {
               "$ref": "#/components/schemas/PackageStatus"
             }
@@ -3473,7 +3373,7 @@
             "name": "expiringSoon",
             "in": "query",
             "required": false,
-            "description": "",
+            "description": "true: ACTIVE con vencimiento de 0 a 7 días inclusive; false: complemento; omitido: sin filtro.",
             "schema": {
               "type": "boolean"
             }
@@ -3490,7 +3390,7 @@
         "x-roles": [
           "ADMIN"
         ],
-        "description": "Socio activo MEMBER y tipo activo. Snapshot de créditos; expiresOn=startsOn+durationDays-1, inclusive. assignedAt del servidor. Duplicado socio/tipo/inicio: 409 PACKAGE_ASSIGNMENT_EXISTS.",
+        "description": "Solo ADMIN. Body exacto memberId, packageTypeId y startsOn (fecha civil YYYY-MM-DD); admite fechas pasadas, presentes o futuras. Requiere socio existente (404 MEMBER_NOT_FOUND), activo (409 INACTIVE_USER) y MEMBER (409 INVALID_MEMBER), y tipo existente (404 PACKAGE_TYPE_NOT_FOUND) y activo (409 INACTIVE_PACKAGE_TYPE). initialCredits y remainingCredits copian classCredits; expiresOn = startsOn + durationDays - 1 días calendario, inclusive (duración 1: mismo día). Se guardan snapshots de créditos y fechas; cambios posteriores del tipo no los alteran, aunque el nombre mostrado proviene del tipo actual. Se permiten vigencias superpuestas. Solo la combinación exacta memberId + packageTypeId + startsOn es duplicada (409 PACKAGE_ASSIGNMENT_EXISTS). assignedAt lo establece el servidor.",
         "responses": {
           "201": {
             "description": "Operación completada",
@@ -3571,6 +3471,16 @@
               }
             }
           },
+          "413": {
+            "description": "REQUEST_TOO_LARGE: el body JSON supera el límite permitido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Error interno sin detalles",
             "content": {
@@ -3609,7 +3519,7 @@
           "ADMIN",
           "MEMBER"
         ],
-        "description": "MEMBER solo propio.",
+        "description": "ADMIN puede consultar cualquier asignación; MEMBER solo una propia y recibe 403 FORBIDDEN al solicitar una ajena; ID inexistente: 404 NOT_FOUND. PROFESSOR no tiene acceso.",
         "responses": {
           "200": {
             "description": "Operación completada",
@@ -3682,26 +3592,6 @@
           },
           "404": {
             "description": "Recurso inexistente",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflicto de negocio o estado",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Campos inválidos",
             "content": {
               "application/json": {
                 "schema": {
@@ -4641,6 +4531,7 @@
       },
       "PackageStatus": {
         "type": "string",
+        "description": "Estado derivado con prioridad NOT_STARTED → EXPIRED → EXHAUSTED → ACTIVE según calendario de Argentina.",
         "enum": [
           "NOT_STARTED",
           "ACTIVE",
@@ -4801,6 +4692,7 @@
       },
       "PackageType": {
         "type": "object",
+        "description": "El nombre visible de una asignación se obtiene del tipo actual. La unicidad normalizada usa lower(btrim(name)).",
         "additionalProperties": false,
         "properties": {
           "id": {
@@ -4809,6 +4701,7 @@
           },
           "name": {
             "type": "string",
+            "description": "Nombre recortado por el servidor; único sin distinguir mayúsculas/minúsculas ni espacios exteriores.",
             "maxLength": 100
           },
           "classCredits": {
@@ -4833,6 +4726,7 @@
       },
       "MemberPackage": {
         "type": "object",
+        "description": "Incluye snapshots de créditos y fechas. El nombre de packageType refleja el tipo actual. daysUntilExpiration no se expone.",
         "additionalProperties": false,
         "properties": {
           "id": {
@@ -4866,9 +4760,11 @@
             "format": "date-time"
           },
           "status": {
+            "description": "Estado derivado: NOT_STARTED → EXPIRED → EXHAUSTED → ACTIVE.",
             "$ref": "#/components/schemas/PackageStatus"
           },
           "expiringSoon": {
+            "description": "true solo para ACTIVE con vencimiento entre hoy y siete días inclusive; no se calcula ni expone daysUntilExpiration.",
             "type": "boolean"
           }
         },
@@ -5561,6 +5457,7 @@
       },
       "PackageTypeCreate": {
         "type": "object",
+        "description": "Body estricto. No admite active; el tipo se crea activo y el servidor recorta name. Colisión normalizada lower(btrim(name)): 409 PACKAGE_TYPE_NAME_CONFLICT.",
         "additionalProperties": false,
         "properties": {
           "name": {
@@ -5585,6 +5482,7 @@
       },
       "PackageTypePatch": {
         "type": "object",
+        "description": "Body estricto y parcial; debe incluir al menos un campo. Permite name, classCredits, durationDays y active. Colisión normalizada: 409 PACKAGE_TYPE_NAME_CONFLICT.",
         "additionalProperties": false,
         "properties": {
           "name": {
@@ -5608,6 +5506,7 @@
       },
       "PackageAssignment": {
         "type": "object",
+        "description": "Body estricto con exactamente memberId, packageTypeId y startsOn. startsOn es fecha civil YYYY-MM-DD y admite pasado, presente o futuro.",
         "additionalProperties": false,
         "properties": {
           "memberId": {
